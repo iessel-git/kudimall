@@ -1,0 +1,28 @@
+{
+  "name": "kudimall",
+  "version": "1.0.0",
+  "description": "KudiMall - Destination marketplace and social-commerce checkout platform",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
+    "server:dev": "cd server && nodemon index.js",
+    "client:dev": "cd client && npm run dev",
+    "server:start": "cd server && node index.js",
+    "client:build": "cd client && npm run build",
+    "client:start": "cd client && npm run start",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "test": "echo \"Test suite not yet implemented\" && exit 0"
+  },
+  "keywords": [
+    "marketplace",
+    "ecommerce",
+    "social-commerce",
+    "escrow"
+  ],
+  "author": "KudiMall Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2"
+  }
+}
