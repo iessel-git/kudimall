@@ -1,8 +1,9 @@
 .footer {
-  background: #2c3e50;
-  color: white;
+  background: #f8f8f8;
+  color: #1a1a1a;
   padding: 60px 0 20px;
   margin-top: 80px;
+  border-top: 1px solid #e8e8e8;
 }
 
 .footer-content {
@@ -15,19 +16,19 @@
 .footer-section h3 {
   font-size: 24px;
   margin-bottom: 15px;
-  color: #28a745;
+  color: #d4a546;
 }
 
 .footer-section h4 {
   font-size: 18px;
   margin-bottom: 15px;
-  color: white;
+  color: #1a1a1a;
 }
 
 .footer-description {
   line-height: 1.8;
   margin-bottom: 20px;
-  color: #ecf0f1;
+  color: #6a6a6a;
 }
 
 .trust-badges {
@@ -37,10 +38,12 @@
 }
 
 .trust-badges .badge {
-  background: rgba(255,255,255,0.1);
+  background: rgba(212, 165, 70, 0.1);
+  border: 1px solid #d4a546;
   padding: 8px 12px;
   border-radius: 4px;
   font-size: 14px;
+  color: #1a1a1a;
 }
 
 .footer-section ul {
@@ -49,29 +52,92 @@
 
 .footer-section ul li {
   margin-bottom: 10px;
-  color: #ecf0f1;
+  color: #6a6a6a;
   cursor: pointer;
+  transition: color 0.3s ease;
 }
 
-.footer-section ul li:hover {
-  color: #28a745;
+.footer-section ul li a {
+  color: #6a6a6a;
+  transition: color 0.3s ease;
+  display: inline-block;
+}
+
+.footer-section ul li:hover,
+.footer-section ul li a:hover {
+  color: #d4a546;
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid #e8e8e8;
   padding-top: 20px;
   text-align: center;
-  color: #95a5a6;
+  color: #8a8a8a;
 }
 
 .footer-tagline {
   margin-top: 10px;
   font-style: italic;
-  color: #bdc3c7;
+  color: #8a8a8a;
 }
 
 @media (max-width: 768px) {
+  .footer {
+    padding: 40px 0 20px;
+    margin-top: 40px;
+  }
+
   .footer-content {
     grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .footer-section h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .footer-section h4 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .footer-description {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .trust-badges {
+    gap: 8px;
+  }
+
+  .trust-badges .badge {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .footer-section ul li {
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .footer-section ul li a {
+    font-size: 14px;
+    padding: 8px 0;
+    display: block;
+  }
+
+  .footer-bottom {
+    padding-top: 20px;
+    padding-bottom: 8px;
+    margin-top: 28px;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .footer-tagline {
+    font-size: 12px;
+    margin-top: 8px;
   }
 }

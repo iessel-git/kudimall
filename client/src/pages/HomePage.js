@@ -46,8 +46,10 @@ const HomePage = () => {
             </h1>
             <p className="hero-subtitle">
               Shop directly on KudiMall or buy from links shared on social media.
-              <br />
-              Either way, every purchase is protected.
+              {/* <br /> */}
+              {/*Either way, every purchase is protected.*/}
+                          <br />
+
             </p>
             <div className="hero-features">
               <div className="feature">
@@ -68,7 +70,7 @@ const HomePage = () => {
       </section>
 
       {/* Categories Section */}
-      <section className="categories-section">
+      <section className="categories-section" id="categories">
         <div className="container">
           <h2 className="section-title">Shop by Category</h2>
           <div className="categories-grid">
@@ -88,7 +90,7 @@ const HomePage = () => {
       </section>
 
       {/* Featured Sellers Section */}
-      <section className="featured-sellers">
+      <section className="featured-sellers" id="featured-sellers">
         <div className="container">
           <h2 className="section-title">Featured Sellers</h2>
           <div className="sellers-grid">
@@ -142,7 +144,7 @@ const HomePage = () => {
                     {product.is_verified && ' ✓'}
                   </p>
                   <p className="product-price">
-                    ₦{product.price.toLocaleString()}
+                    ₵{product.price.toLocaleString()}
                   </p>
                   <div className="product-badges">
                     <span className="escrow-badge">🔒 Escrow Protected</span>
@@ -150,6 +152,22 @@ const HomePage = () => {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Seller CTA Section */}
+      <section className="seller-cta-section">
+        <div className="container">
+          <div className="seller-cta-content">
+            <h2>Ready to Start Selling?</h2>
+            <p>Join thousands of successful sellers on KudiMall. Reach buyers through our marketplace and social media.</p>
+            <div className="seller-cta-features">
+              <span>🛡️ Seller Protection</span>
+              <span>📱 Social Commerce Tools</span>
+              <span>💰 Competitive Commission Rates</span>
+            </div>
+            <Link to="/seller-application" className="cta-button">Apply to Become a Seller</Link>
           </div>
         </div>
       </section>

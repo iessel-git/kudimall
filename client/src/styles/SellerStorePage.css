@@ -1,10 +1,10 @@
 .seller-store-page {
-  background: #f5f5f5;
+  background: var(--lux-cream);
 }
 
 .store-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 60%, #3a2e1c 100%);
+  color: #f6f1e6;
   padding: 60px 0;
   margin-bottom: 40px;
 }
@@ -18,13 +18,14 @@
 
 .store-logo {
   font-size: 80px;
-  background: white;
+  background: #fff;
   border-radius: 50%;
   width: 120px;
   height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 18px 30px rgba(15, 17, 21, 0.2);
 }
 
 .store-info {
@@ -37,13 +38,18 @@
 }
 
 .verified-badge {
-  background: #28a745;
-  padding: 6px 12px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  padding: 8px 16px;
+  border-radius: 20px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   display: inline-block;
   margin-bottom: 10px;
+  color: #ffffff;
+  border: 2px solid #81c784;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.4);
 }
 
 .store-location {
@@ -60,18 +66,19 @@
 }
 
 .follow-button {
-  background: white;
-  color: #667eea;
+  background: linear-gradient(135deg, #c8a45a 0%, #e6c980 100%);
+  color: #1a1d24;
   padding: 12px 30px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  box-shadow: 0 12px 24px rgba(200, 164, 90, 0.25);
 }
 
 .follow-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 16px 30px rgba(15, 17, 21, 0.25);
 }
 
 .store-description {
@@ -91,7 +98,7 @@
 .store-reviews h2 {
   font-size: 28px;
   margin-bottom: 30px;
-  color: #333;
+  color: var(--lux-ink);
 }
 
 .products-grid {
@@ -101,21 +108,21 @@
 }
 
 .product-card {
-  background: white;
+  background: #fff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--lux-shadow);
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 18px 30px rgba(15, 17, 21, 0.15);
 }
 
 .product-image {
-  background: #f8f9fa;
+  background: #f5efe4;
   height: 200px;
   display: flex;
   align-items: center;
@@ -135,35 +142,39 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: #333;
+  color: var(--lux-ink);
 }
 
 .product-category {
   font-size: 14px;
-  color: #666;
+  color: var(--lux-slate);
   margin-bottom: 8px;
 }
 
 .product-price {
   font-size: 20px;
   font-weight: 700;
-  color: #28a745;
+  color: var(--lux-gold-strong);
   margin-bottom: 12px;
 }
 
 .escrow-badge {
-  background: #e8f5e9;
-  color: #28a745;
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #ffa726 0%, #ffb74d 100%);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  border: 2px solid #ffca28;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 8px rgba(255, 167, 38, 0.4);
 }
 
 .no-products {
   text-align: center;
   padding: 40px;
-  color: #666;
+  color: var(--lux-slate);
 }
 
 /* Reviews */
@@ -173,10 +184,10 @@
 }
 
 .review-card {
-  background: white;
+  background: #fff;
   padding: 20px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: var(--lux-shadow);
 }
 
 .review-header {
@@ -188,28 +199,28 @@
 
 .reviewer-name {
   font-weight: 600;
-  color: #333;
+  color: var(--lux-ink);
 }
 
 .review-rating {
-  color: #ffc107;
+  color: var(--lux-gold);
 }
 
 .review-product {
   font-size: 14px;
-  color: #666;
+  color: var(--lux-slate);
   margin-bottom: 10px;
 }
 
 .review-comment {
-  color: #333;
+  color: var(--lux-ink-2);
   line-height: 1.6;
   margin-bottom: 10px;
 }
 
 .review-date {
   font-size: 12px;
-  color: #999;
+  color: rgba(15, 17, 21, 0.45);
 }
 
 @media (max-width: 768px) {

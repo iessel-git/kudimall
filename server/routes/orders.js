@@ -2,9 +2,27 @@ const express = require('express');
 const router = express.Router();
 const db = require('../models/database');
 const { v4: uuidv4 } = require('uuid');
+const jwt = require('jsonwebtoken');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'kudimall_buyer_secret_key_2024';
+
+// Optional buyer authentication middleware
+const optionalBuyerAuth = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token) {
+    jwt.verify(token, JWT_SECRET, (err, buyer) => {
+      if (!err) {
+        req.buyer = buyer;
+      }
+    });
+  }
+  next();
+};
 
 // Create order (checkout)
-router.post('/', async (req, res) => {
+router.post('/', optionalBuyerAuth, async (req, res) => {
   try {
     const {
       buyer_name,
@@ -38,13 +56,16 @@ router.post('/', async (req, res) => {
     const total_amount = product.price * quantity;
     const order_number = `KM-${uuidv4().slice(0, 8).toUpperCase()}`;
     
+    // Get buyer_id if logged in
+    const buyer_id = req.buyer ? req.buyer.id : null;
+    
     // Create order
     const result = await db.run(
       `INSERT INTO orders 
-       (order_number, buyer_name, buyer_email, buyer_phone, seller_id, 
+       (order_number, buyer_id, buyer_name, buyer_email, buyer_phone, seller_id, 
         product_id, quantity, total_amount, delivery_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [order_number, buyer_name, buyer_email, buyer_phone, seller_id,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [order_number, buyer_id, buyer_name, buyer_email, buyer_phone, seller_id,
        product_id, quantity, total_amount, delivery_address]
     );
     

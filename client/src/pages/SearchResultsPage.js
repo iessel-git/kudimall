@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { search } from '../services/api';
+import { search, getSellers } from '../services/api';
 import '../styles/SearchResultsPage.css';
 
 const SearchResultsPage = () => {
@@ -13,12 +13,21 @@ const SearchResultsPage = () => {
 
   useEffect(() => {
     const fetchResults = async () => {
-      if (!query) return;
-      
       try {
         setLoading(true);
-        const response = await search({ q: query, type });
-        setResults(response.data);
+        
+        // If type is 'sellers' and no query, fetch all sellers
+        if (type === 'sellers' && !query) {
+          const response = await getSellers();
+          setResults({ products: [], sellers: response.data, categories: [] });
+        } else if (query) {
+          // Normal search with query
+          const response = await search({ q: query, type });
+          setResults(response.data);
+        } else {
+          // No query and not sellers-only view
+          setResults({ products: [], sellers: [], categories: [] });
+        }
       } catch (error) {
         console.error('Error searching:', error);
       } finally {
@@ -36,11 +45,18 @@ const SearchResultsPage = () => {
   const totalResults = 
     results.products.length + results.sellers.length + results.categories.length;
 
+  const getPageTitle = () => {
+    if (type === 'sellers' && !query) {
+      return 'All Sellers';
+    }
+    return query ? `Search Results for "${query}"` : 'Search Results';
+  };
+
   return (
     <div className="search-results-page">
       <div className="container">
         <div className="search-header">
-          <h1>Search Results for "{query}"</h1>
+          <h1>{getPageTitle()}</h1>
           <p>{totalResults} results found</p>
         </div>
 
@@ -65,7 +81,7 @@ const SearchResultsPage = () => {
                       {product.is_verified && ' ✓'}
                     </p>
                     <p className="product-price">
-                      ₦{product.price.toLocaleString()}
+                      ₵{product.price.toLocaleString()}
                     </p>
                     <div className="product-badges">
                       <span className="trust-badge">
@@ -130,8 +146,17 @@ const SearchResultsPage = () => {
 
         {totalResults === 0 && (
           <div className="no-results">
-            <p>No results found for "{query}"</p>
-            <p>Try different keywords or browse our categories.</p>
+            {query ? (
+              <>
+                <p>No results found for "{query}"</p>
+                <p>Try different keywords or browse our categories.</p>
+              </>
+            ) : (
+              <>
+                <p>No sellers found</p>
+                <p>Check back later for new sellers.</p>
+              </>
+            )}
           </div>
         )}
       </div>

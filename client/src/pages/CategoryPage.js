@@ -65,7 +65,7 @@ const CategoryPage = () => {
                     {product.is_verified && ' ✓'}
                   </p>
                   <p className="product-price">
-                    ₦{product.price.toLocaleString()}
+                    ₵{product.price.toLocaleString()}
                   </p>
                   <div className="product-meta">
                     <span className="trust-badge">

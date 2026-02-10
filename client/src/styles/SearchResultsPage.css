@@ -1,6 +1,7 @@
 .search-results-page {
   padding: 40px 0;
   min-height: 60vh;
+  background: #ffffff;
 }
 
 .search-header {
@@ -10,13 +11,13 @@
 
 .search-header h1 {
   font-size: 32px;
-  color: #333;
+  color: var(--lux-ink);
   margin-bottom: 8px;
 }
 
 .search-header p {
   font-size: 16px;
-  color: #666;
+  color: var(--lux-slate);
 }
 
 .results-section {
@@ -26,9 +27,9 @@
 .results-section h2 {
   font-size: 24px;
   margin-bottom: 24px;
-  color: #333;
+  color: var(--lux-ink);
   padding-bottom: 12px;
-  border-bottom: 2px solid #28a745;
+  border-bottom: 2px solid var(--lux-gold);
 }
 
 /* Products Grid */
@@ -39,29 +40,30 @@
 }
 
 .product-card {
-  background: white;
-  border: 1px solid #e9ecef;
+  background: #fff;
+  border: 1px solid #e8e8e8;
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .product-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 16px rgba(212, 165, 70, 0.25);
 }
 
 .product-image {
-  background: #f8f9fa;
-  height: 200px;
+  background: #f8f8f8;
+  height: 160px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .placeholder-image {
-  font-size: 64px;
+  font-size: 48px;
   opacity: 0.3;
 }
 
@@ -73,19 +75,19 @@
   font-size: 16px;
   font-weight: 600;
   margin-bottom: 8px;
-  color: #333;
+  color: var(--lux-ink);
 }
 
 .product-seller {
   font-size: 14px;
-  color: #666;
+  color: var(--lux-slate);
   margin-bottom: 8px;
 }
 
 .product-price {
   font-size: 20px;
   font-weight: 700;
-  color: #28a745;
+  color: var(--lux-gold-strong);
   margin-bottom: 12px;
 }
 
@@ -97,20 +99,26 @@
 
 .trust-badge,
 .escrow-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 5px 12px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .trust-badge {
-  background: #fff3cd;
-  color: #856404;
+  background: linear-gradient(135deg, #00a651 0%, #00d66a 100%);
+  color: #ffffff;
+  border: 2px solid #81c784;
+  box-shadow: 0 2px 8px rgba(0, 166, 81, 0.3);
 }
 
 .escrow-badge {
-  background: #e8f5e9;
-  color: #28a745;
+  background: linear-gradient(135deg, #d4a546 0%, #f4c542 100%);
+  color: #1a1a1a;
+  border: 2px solid #f4c542;
+  box-shadow: 0 2px 8px rgba(212, 165, 70, 0.3);
 }
 
 /* Sellers Grid */
@@ -121,17 +129,18 @@
 }
 
 .seller-card {
-  background: white;
+  background: #fff;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease;
   cursor: pointer;
+  border: 1px solid #e8e8e8;
 }
 
 .seller-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 16px rgba(212, 165, 70, 0.25);
 }
 
 .seller-logo {
@@ -142,28 +151,32 @@
 .seller-card h3 {
   font-size: 20px;
   margin-bottom: 8px;
-  color: #333;
+  color: var(--lux-ink);
 }
 
 .verified-badge {
-  background: #28a745;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
+  background: linear-gradient(135deg, #00a651 0%, #00d66a 100%);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 16px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   display: inline-block;
   margin-bottom: 8px;
+  border: 2px solid #81c784;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 166, 81, 0.3);
 }
 
 .seller-location {
-  color: #666;
+  color: var(--lux-slate);
   font-size: 14px;
   margin-bottom: 12px;
 }
 
 .seller-description {
-  color: #666;
+  color: var(--lux-slate);
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: 12px;
@@ -173,7 +186,7 @@
   display: flex;
   gap: 15px;
   font-size: 14px;
-  color: #28a745;
+  color: var(--lux-gold-strong);
   font-weight: 600;
 }
 
@@ -185,19 +198,20 @@
 }
 
 .category-card {
-  background: white;
-  border: 2px solid #e9ecef;
+  background: #fff;
+  border: 1px solid #e8e8e8;
   border-radius: 12px;
   padding: 30px;
   text-align: center;
   transition: all 0.3s ease;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .category-card:hover {
   transform: translateY(-4px);
-  border-color: #28a745;
-  box-shadow: 0 8px 16px rgba(40,167,69,0.2);
+  border-color: #d4a546;
+  box-shadow: 0 4px 16px rgba(212, 165, 70, 0.25);
 }
 
 .category-icon {
@@ -208,11 +222,11 @@
 .category-card h3 {
   font-size: 20px;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--lux-ink);
 }
 
 .category-card p {
-  color: #666;
+  color: var(--lux-slate);
   font-size: 14px;
 }
 
@@ -224,18 +238,170 @@
 
 .no-results p {
   font-size: 18px;
-  color: #666;
+  color: var(--lux-slate);
   margin-bottom: 12px;
 }
 
 @media (max-width: 768px) {
+  .search-results-page {
+    padding: 16px 0;
+  }
+
+  .search-header {
+    padding: 16px;
+    margin-bottom: 20px;
+    text-align: left;
+  }
+
   .search-header h1 {
-    font-size: 24px;
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  .search-header p {
+    font-size: 13px;
+  }
+
+  .results-section {
+    margin-bottom: 28px;
+  }
+
+  .results-section h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+    padding: 0 16px;
   }
   
-  .products-grid,
-  .sellers-grid,
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 16px;
+  }
+
+  .product-card {
+    border-radius: 10px;
+  }
+
+  .product-image {
+    height: 110px;
+  }
+
+  .placeholder-image {
+    font-size: 36px;
+  }
+
+  .product-info {
+    padding: 12px;
+  }
+
+  .product-name {
+    font-size: 13px;
+    line-height: 1.3;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .product-seller {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .product-price {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .product-badges {
+    gap: 6px;
+  }
+
+  .trust-badge,
+  .escrow-badge {
+    font-size: 9px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    border-width: 1px;
+  }
+
+  .sellers-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 0 16px;
+  }
+
+  .seller-card {
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .seller-logo {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+
+  .seller-card h3 {
+    font-size: 17px;
+    margin-bottom: 6px;
+  }
+
+  .verified-badge {
+    font-size: 10px;
+    padding: 4px 10px;
+    margin-bottom: 6px;
+  }
+
+  .seller-location {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .seller-description {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+
+  .seller-stats {
+    font-size: 12px;
+    gap: 12px;
+  }
+
   .categories-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .category-card {
+    padding: 20px 16px;
+    border-radius: 12px;
+    min-height: 140px;
+  }
+
+  .category-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+  }
+
+  .category-card h3 {
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+
+  .category-card p {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .no-results {
+    padding: 40px 20px;
+  }
+
+  .no-results p {
+    font-size: 15px;
   }
 }

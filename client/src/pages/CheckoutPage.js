@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, createOrder } from '../services/api';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { getProduct, createOrder, getBuyerProfile } from '../services/api';
 import '../styles/CheckoutPage.css';
 
 const CheckoutPage = () => {
@@ -9,6 +9,8 @@ const CheckoutPage = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [buyer, setBuyer] = useState(null);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(true);
   
   const [formData, setFormData] = useState({
     buyer_name: '',
@@ -30,7 +32,29 @@ const CheckoutPage = () => {
       }
     };
 
+    const checkBuyerAuth = async () => {
+      const token = localStorage.getItem('buyer_token');
+      if (token) {
+        try {
+          const response = await getBuyerProfile();
+          setBuyer(response.data.buyer);
+          // Auto-fill form with buyer's saved info
+          setFormData(prev => ({
+            ...prev,
+            buyer_name: response.data.buyer.name,
+            buyer_email: response.data.buyer.email,
+            buyer_phone: response.data.buyer.phone || '',
+            delivery_address: response.data.buyer.default_address || ''
+          }));
+          setShowAccountPrompt(false);
+        } catch (error) {
+          console.error('Error fetching buyer profile:', error);
+        }
+      }
+    };
+
     fetchProduct();
+    checkBuyerAuth();
   }, [productSlug]);
 
   const handleInputChange = (e) => {
@@ -54,9 +78,23 @@ const CheckoutPage = () => {
 
       const response = await createOrder(orderData);
       
-      // Redirect to order confirmation
-      alert(`Order placed successfully! Order Number: ${response.data.order_number}`);
-      navigate('/');
+      // If buyer is not logged in, offer to create account
+      if (!buyer) {
+        const createAccount = window.confirm(
+          `Order placed successfully! Order Number: ${response.data.order_number}\n\n` +
+          'Would you like to create an account to track this order?'
+        );
+        if (createAccount) {
+          navigate('/buyer/signup', { 
+            state: { from: { pathname: '/buyer/dashboard' } }
+          });
+        } else {
+          navigate('/');
+        }
+      } else {
+        alert(`Order placed successfully! Order Number: ${response.data.order_number}`);
+        navigate('/buyer/dashboard');
+      }
     } catch (error) {
       console.error('Error creating order:', error);
       alert('Failed to place order. Please try again.');
@@ -80,6 +118,39 @@ const CheckoutPage = () => {
       <div className="container">
         <h1 className="page-title">Secure Checkout</h1>
         
+        {showAccountPrompt && (
+          <div className="account-prompt">
+            <div className="prompt-content">
+              <p>
+                💡 <strong>Have an account?</strong>{' '}
+                <Link to="/buyer/login" state={{ from: { pathname: `/checkout/${productSlug}` } }}>
+                  Log in
+                </Link>{' '}
+                for faster checkout or{' '}
+                <Link to="/buyer/signup" state={{ from: { pathname: `/checkout/${productSlug}` } }}>
+                  Sign up
+                </Link>{' '}
+                to track your order
+              </p>
+              <button 
+                className="btn-guest-checkout"
+                onClick={() => setShowAccountPrompt(false)}
+              >
+                Continue as Guest
+              </button>
+            </div>
+            <button className="btn-close" onClick={() => setShowAccountPrompt(false)}>×</button>
+          </div>
+        )}
+
+        {buyer && (
+          <div className="buyer-info-banner">
+            <p>
+              ✓ Logged in as <strong>{buyer.name}</strong> ({buyer.email})
+            </p>
+          </div>
+        )}
+        
         <div className="checkout-layout">
           {/* Order Summary */}
           <div className="order-summary">
@@ -92,14 +163,14 @@ const CheckoutPage = () => {
                   Sold by {product.seller_name}
                   {product.is_verified && ' ✓'}
                 </p>
-                <p className="product-price">₦{product.price.toLocaleString()}</p>
+                <p className="product-price">₵{product.price.toLocaleString()}</p>
               </div>
             </div>
             
             <div className="summary-breakdown">
               <div className="summary-row">
                 <span>Price per item:</span>
-                <span>₦{product.price.toLocaleString()}</span>
+                <span>₵{product.price.toLocaleString()}</span>
               </div>
               <div className="summary-row">
                 <span>Quantity:</span>
@@ -107,7 +178,7 @@ const CheckoutPage = () => {
               </div>
               <div className="summary-row total">
                 <span>Total:</span>
-                <span>₦{totalAmount.toLocaleString()}</span>
+                <span>₵{totalAmount.toLocaleString()}</span>
               </div>
             </div>
 
@@ -115,7 +186,8 @@ const CheckoutPage = () => {
               <h4>🔒 Escrow Protection</h4>
               <p>
                 Your payment will be held securely until you confirm delivery.
-                This protects both you and the seller.
+                After receiving your order, you'll be asked to confirm receipt through
+                our online receipt confirmation system. This protects both you and the seller.
               </p>
             </div>
           </div>

@@ -88,7 +88,7 @@ const SellerStorePage = () => {
                     <h3 className="product-name">{product.name}</h3>
                     <p className="product-category">{product.category_name}</p>
                     <p className="product-price">
-                      ₦{product.price.toLocaleString()}
+                      ₵{product.price.toLocaleString()}
                     </p>
                     <span className="escrow-badge">🔒 Escrow Protected</span>
                   </div>

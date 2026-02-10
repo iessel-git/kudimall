@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import '../styles/Footer.css';
 
 const Footer = () => {
@@ -22,19 +23,19 @@ const Footer = () => {
           <div className="footer-section">
             <h4>For Buyers</h4>
             <ul>
-              <li>Browse Categories</li>
-              <li>Featured Sellers</li>
-              <li>How It Works</li>
-              <li>Buyer Protection</li>
+              <li><Link to="/#categories">Browse Categories</Link></li>
+              <li><Link to="/#featured-sellers">Featured Sellers</Link></li>
+              <li><Link to="/how-it-works">How It Works</Link></li>
+              <li><Link to="/buyer-protection">Buyer Protection</Link></li>
             </ul>
           </div>
           
           <div className="footer-section">
             <h4>For Sellers</h4>
             <ul>
-              <li>Start Selling</li>
-              <li>Seller Dashboard</li>
-              <li>Pricing</li>
+              <li><Link to="/start-selling">Start Selling</Link></li>
+              <li><Link to="/seller-application">Apply Now</Link></li>
+              <li><Link to="/seller-dashboard">Seller Dashboard</Link></li>
               <li>Success Stories</li>
             </ul>
           </div>
@@ -42,16 +43,16 @@ const Footer = () => {
           <div className="footer-section">
             <h4>Support</h4>
             <ul>
-              <li>Help Center</li>
-              <li>Contact Us</li>
-              <li>Terms of Service</li>
-              <li>Privacy Policy</li>
+              <li><Link to="/help-center">Help Center</Link></li>
+              <li><Link to="/contact-us">Contact Us</Link></li>
+              <li><Link to="/terms-of-service">Terms of Service</Link></li>
+              <li><Link to="/privacy-policy">Privacy Policy</Link></li>
             </ul>
           </div>
         </div>
         
         <div className="footer-bottom">
-          <p>&copy; 2024 KudiMall. All rights reserved.</p>
+          <p>&copy; 2026 KudiMall. All rights reserved.</p>
           <p className="footer-tagline">
             KudiMall is both a destination marketplace and a social-commerce checkout platform.
           </p>

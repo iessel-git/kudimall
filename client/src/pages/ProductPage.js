@@ -71,7 +71,7 @@ const ProductPage = () => {
             </div>
 
             <div className="product-price-section">
-              <p className="product-price">₦{product.price.toLocaleString()}</p>
+              <p className="product-price">₵{product.price.toLocaleString()}</p>
               <div className="trust-badges">
                 <span className="badge escrow">🔒 Escrow Protected</span>
                 <span className="badge verified">✓ Verified Seller</span>
