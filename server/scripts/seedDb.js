@@ -3,6 +3,12 @@ const db = require('../models/database');
 const seedDb = async () => {
   try {
     console.log('🌱 Seeding KudiMall Database...');
+    
+    // Initialize database tables first
+    console.log('🔧 Initializing tables...');
+    const initDb = require('./initDb');
+    await initDb();
+    console.log('✅ Database tables initialized');
 
     // Seed Categories
     const categories = [

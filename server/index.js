@@ -70,6 +70,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KudiMall API is running' });
 });
 
+// Manual seed endpoint (backup for auto-seed)
+app.post('/api/seed-database', async (req, res) => {
+  try {
+    const seedDb = require('./scripts/seedDb');
+    await seedDb();
+    res.json({ status: 'success', message: 'Database seeded successfully' });
+  } catch (error) {
+    console.error('Manual seed error:', error);
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -83,9 +95,21 @@ app.listen(PORT, async () => {
   // Auto-seed database if empty (for free tier deployment)
   try {
     const db = require('./models/database');
-    const categories = await db.all('SELECT COUNT(*) as count FROM categories');
     
-    if (categories[0].count === 0) {
+    // Wait a bit for database to be ready
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Check if categories table exists and has data
+    let hasData = false;
+    try {
+      const categories = await db.all('SELECT COUNT(*) as count FROM categories');
+      hasData = categories[0].count > 0;
+    } catch (tableError) {
+      // Table might not exist yet, which is fine
+      console.log('🔧 Categories table not found, will initialize...');
+    }
+    
+    if (!hasData) {
       console.log('🌱 Database appears empty, auto-seeding...');
       const seedDb = require('./scripts/seedDb');
       await seedDb();
@@ -94,7 +118,8 @@ app.listen(PORT, async () => {
       console.log('📊 Database already contains data, skipping seed');
     }
   } catch (error) {
-    console.log('⚠️  Auto-seed check failed (this is normal on first run):', error.message);
+    console.log('⚠️  Auto-seed failed:', error.message);
+    console.log('💡 You may need to seed manually via API endpoint');
   }
 });
 
