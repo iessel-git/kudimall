@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://kudimall-api.onrender.com/api' 
+    : 'http://localhost:5000/api');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,6 +11,8 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+console.log('🔗 API Base URL:', API_BASE_URL);
 
 // Categories
 export const getCategories = () => api.get('/categories');
