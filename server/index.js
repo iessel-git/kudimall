@@ -76,9 +76,26 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🟢 KudiMall API Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Auto-seed database if empty (for free tier deployment)
+  try {
+    const db = require('./models/database');
+    const categories = await db.all('SELECT COUNT(*) as count FROM categories');
+    
+    if (categories[0].count === 0) {
+      console.log('🌱 Database appears empty, auto-seeding...');
+      const seedDb = require('./scripts/seedDb');
+      await seedDb();
+      console.log('✅ Database auto-seeded successfully');
+    } else {
+      console.log('📊 Database already contains data, skipping seed');
+    }
+  } catch (error) {
+    console.log('⚠️  Auto-seed check failed (this is normal on first run):', error.message);
+  }
 });
 
 module.exports = app;

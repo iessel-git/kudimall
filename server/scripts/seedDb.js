@@ -239,8 +239,16 @@ const seedDb = async () => {
     process.exit(0);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
-seedDb();
+// Export the function for API use, but also run if called directly
+if (require.main === module) {
+  seedDb().catch(error => {
+    console.error(error);
+    process.exit(1);
+  });
+}
+
+module.exports = seedDb;
