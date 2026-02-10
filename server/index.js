@@ -96,20 +96,10 @@ app.listen(PORT, async () => {
   try {
     const db = require('./models/database');
     
-    // Wait a bit for database to be ready
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Simple check - if any error occurs, just skip auto-seed
+    const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
     
-    // Check if categories table exists and has data
-    let hasData = false;
-    try {
-      const categories = await db.all('SELECT COUNT(*) as count FROM categories');
-      hasData = categories[0].count > 0;
-    } catch (tableError) {
-      // Table might not exist yet, which is fine
-      console.log('🔧 Categories table not found, will initialize...');
-    }
-    
-    if (!hasData) {
+    if (categories && categories[0] && categories[0].count === 0) {
       console.log('🌱 Database appears empty, auto-seeding...');
       const seedDb = require('./scripts/seedDb');
       await seedDb();
@@ -118,8 +108,8 @@ app.listen(PORT, async () => {
       console.log('📊 Database already contains data, skipping seed');
     }
   } catch (error) {
-    console.log('⚠️  Auto-seed failed:', error.message);
-    console.log('💡 You may need to seed manually via API endpoint');
+    console.log('ℹ️  Auto-seed skipped:', error.message);
+    console.log('💡 Use POST /api/seed-database to seed manually');
   }
 });
 

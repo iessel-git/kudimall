@@ -4,11 +4,71 @@ const seedDb = async () => {
   try {
     console.log('🌱 Seeding KudiMall Database...');
     
-    // Initialize database tables first
-    console.log('🔧 Initializing tables...');
-    const initDb = require('./initDb');
-    await initDb();
-    console.log('✅ Database tables initialized');
+    // Create tables first
+    console.log('🔧 Creating tables...');
+    
+    // Categories table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        description TEXT,
+        image_url TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Sellers table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS sellers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        slug TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT,
+        phone TEXT,
+        description TEXT,
+        banner_url TEXT,
+        logo_url TEXT,
+        trust_level INTEGER DEFAULT 1,
+        is_verified BOOLEAN DEFAULT 0,
+        is_active BOOLEAN DEFAULT 1,
+        total_sales INTEGER DEFAULT 0,
+        rating REAL DEFAULT 0.0,
+        review_count INTEGER DEFAULT 0,
+        location TEXT,
+        last_login DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Products table
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        seller_id INTEGER NOT NULL,
+        category_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL,
+        description TEXT,
+        price REAL NOT NULL,
+        image_url TEXT,
+        images TEXT,
+        stock INTEGER DEFAULT 0,
+        is_available BOOLEAN DEFAULT 1,
+        is_featured BOOLEAN DEFAULT 0,
+        views INTEGER DEFAULT 0,
+        sales INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (seller_id) REFERENCES sellers (id),
+        FOREIGN KEY (category_id) REFERENCES categories (id)
+      )
+    `);
+    
+    console.log('✅ Tables created successfully');
 
     // Seed Categories
     const categories = [
