@@ -257,7 +257,7 @@ This repository includes a `render.yaml` configuration file for easy deployment 
      - `NODE_ENV` = `production`
      - `PORT` = `5000`
      - `DATABASE_PATH` = `./kudimall.db`
-     - `JWT_SECRET` = (generate a secure random string)
+     - `JWT_SECRET` = (generate a secure random string of at least 32 characters)
      - `FRONTEND_URL` = (your frontend URL if applicable)
 5. Click **Create Web Service**
 
@@ -274,7 +274,7 @@ Required for production:
 - `PORT` - Server port (default: 5000)
 - `NODE_ENV` - Set to `production`
 - `DATABASE_PATH` - Path to SQLite database file
-- `JWT_SECRET` - Secret key for JWT tokens
+- `JWT_SECRET` - Secret key for JWT tokens (minimum 32 characters)
 
 Optional:
 - `FRONTEND_URL` - Frontend URL for CORS configuration

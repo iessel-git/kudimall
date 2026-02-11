@@ -60,9 +60,11 @@ If you prefer manual setup:
    NODE_ENV=production
    PORT=5000
    DATABASE_PATH=./kudimall.db
-   JWT_SECRET=your-secure-random-string
+   JWT_SECRET=your-secure-random-string-min-32-chars
    FRONTEND_URL=https://your-frontend-url.com
    ```
+   
+   > **Note**: Generate JWT_SECRET with: `openssl rand -hex 32`
 
 4. **Configure Health Check** (Optional but recommended)
    - Path: `/api/health`
@@ -146,7 +148,7 @@ If you prefer manual setup:
 | `NODE_ENV` | Environment mode | `production` |
 | `PORT` | Server port | `5000` |
 | `DATABASE_PATH` | Database file path | `./kudimall.db` |
-| `JWT_SECRET` | JWT signing key | Random 32+ char string |
+| `JWT_SECRET` | JWT signing key (min 32 chars) | `openssl rand -hex 32` |
 
 ### Optional
 | Variable | Description | Example |
