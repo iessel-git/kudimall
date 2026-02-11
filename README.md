@@ -1,4 +1,4 @@
-# KudiMall - Destination Marketplace & Social Commerce Platform
+# KudiMall - Destination Marketplace & Social Commerce Platform for 
 
 ![KudiMall](https://img.shields.io/badge/status-active-success.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
