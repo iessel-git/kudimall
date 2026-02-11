@@ -122,27 +122,32 @@ app.listen(PORT, async () => {
   try {
     const db = require('./models/database');
     
-    // Try to check if categories table exists
-    let tableExists = false;
-    try {
-      await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
-      tableExists = true;
-    } catch (error) {
-      // Table doesn't exist, need to initialize
-      console.log('📋 Database tables not found, initializing...');
-    }
+    // Helper function to check if categories table exists and has data
+    const checkCategoriesTable = async () => {
+      try {
+        const result = await db.get('SELECT COUNT(*) as count FROM categories');
+        return { exists: true, count: result.count };
+      } catch (error) {
+        return { exists: false, count: 0 };
+      }
+    };
+    
+    // Check if database tables exist
+    const tableCheck = await checkCategoriesTable();
     
     // Initialize database if tables don't exist
-    if (!tableExists) {
+    if (!tableCheck.exists) {
+      console.log('📋 Database tables not found, initializing...');
       const initDb = require('./scripts/initDb');
       await initDb();
       console.log('✅ Database initialized successfully');
+      // Refresh table check after initialization
+      tableCheck.count = 0;
+      tableCheck.exists = true;
     }
     
     // Check if database needs seeding
-    const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
-    
-    if (categories && categories[0] && categories[0].count === 0) {
+    if (tableCheck.exists && tableCheck.count === 0) {
       console.log('🌱 Database appears empty, auto-seeding...');
       const seedDb = require('./scripts/seedDb');
       await seedDb();
