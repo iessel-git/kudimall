@@ -4,8 +4,6 @@
   "description": "KudiMall - Destination marketplace and social-commerce checkout platform",
   "main": "server/index.js",
   "scripts": {
-    "start": "cd server && node index.js",
-    "build": "cd server && npm install",
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "cd server && nodemon index.js",
     "client:dev": "cd client && npm run dev",
@@ -23,10 +21,6 @@
   ],
   "author": "KudiMall Team",
   "license": "MIT",
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
-  },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "nodemon": "^3.0.2"
