@@ -118,14 +118,36 @@ app.listen(PORT, async () => {
   console.log(`🟢 KudiMall API Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Auto-seed database if empty (for free tier deployment)
+  // Auto-initialize and seed database if needed (for free tier deployment)
   try {
     const db = require('./models/database');
     
-    // Simple check - if any error occurs, just skip auto-seed
-    const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
+    // Helper function to check if categories table exists and has data
+    const checkCategoriesTable = async () => {
+      try {
+        const result = await db.get('SELECT COUNT(*) as count FROM categories');
+        return { exists: true, count: result.count };
+      } catch (error) {
+        return { exists: false, count: 0 };
+      }
+    };
     
-    if (categories && categories[0] && categories[0].count === 0) {
+    // Check if database tables exist
+    const tableCheck = await checkCategoriesTable();
+    
+    // Initialize database if tables don't exist
+    if (!tableCheck.exists) {
+      console.log('📋 Database tables not found, initializing...');
+      const initDb = require('./scripts/initDb');
+      await initDb();
+      console.log('✅ Database initialized successfully');
+      // Refresh table check after initialization
+      tableCheck.count = 0;
+      tableCheck.exists = true;
+    }
+    
+    // Check if database needs seeding
+    if (tableCheck.exists && tableCheck.count === 0) {
       console.log('🌱 Database appears empty, auto-seeding...');
       const seedDb = require('./scripts/seedDb');
       await seedDb();
@@ -134,7 +156,7 @@ app.listen(PORT, async () => {
       console.log('📊 Database already contains data, skipping seed');
     }
   } catch (error) {
-    console.log('ℹ️  Auto-seed skipped:', error.message);
+    console.error('⚠️  Database initialization error:', error.message);
     console.log('💡 Use POST /api/seed-database to seed manually');
   }
 });
