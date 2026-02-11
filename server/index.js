@@ -14,10 +14,41 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const isOriginAllowed = (origin) => {
+  if (!origin) {
+    return true;
+  }
+
+  if (allowedOrigins.includes(origin)) {
+    return true;
+  }
+
+  let host;
+  try {
+    host = new URL(origin).host;
+  } catch (error) {
+    return false;
+  }
+
+  return allowedOrigins.some((allowed) => {
+    if (!allowed.includes('*')) {
+      return false;
+    }
+
+    const normalized = allowed.replace(/^https?:\/\//, '');
+    if (normalized.startsWith('*.')) {
+      const suffix = normalized.slice(1);
+      return host.endsWith(suffix);
+    }
+
+    return false;
+  });
+};
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
       }
       return callback(new Error('Not allowed by CORS'));
@@ -121,10 +152,10 @@ app.listen(PORT, async () => {
   // Auto-seed database if empty (for free tier deployment)
   try {
     const db = require('./models/database');
-    
-    // Simple check - if any error occurs, just skip auto-seed
+
+    // Simple check - if any error occurs, decide whether to seed or skip
     const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
-    
+
     if (categories && categories[0] && categories[0].count === 0) {
       console.log('🌱 Database appears empty, auto-seeding...');
       const seedDb = require('./scripts/seedDb');
@@ -134,8 +165,21 @@ app.listen(PORT, async () => {
       console.log('📊 Database already contains data, skipping seed');
     }
   } catch (error) {
-    console.log('ℹ️  Auto-seed skipped:', error.message);
-    console.log('💡 Use POST /api/seed-database to seed manually');
+    const message = error && error.message ? error.message : '';
+
+    if (message.includes('no such table')) {
+      console.log('📦 Database tables missing, initializing with seed data...');
+      try {
+        const seedDb = require('./scripts/seedDb');
+        await seedDb();
+        console.log('✅ Database initialized and seeded successfully');
+      } catch (seedError) {
+        console.log('❌ Auto-seed failed:', seedError.message);
+      }
+    } else {
+      console.log('ℹ️  Auto-seed skipped:', message);
+      console.log('💡 Use POST /api/seed-database to seed manually');
+    }
   }
 });
 

@@ -3,72 +3,11 @@ const db = require('../models/database');
 const seedDb = async () => {
   try {
     console.log('🌱 Seeding KudiMall Database...');
-    
-    // Create tables first
-    console.log('🔧 Creating tables...');
-    
-    // Categories table
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        description TEXT,
-        image_url TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Sellers table
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS sellers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        slug TEXT UNIQUE NOT NULL,
-        email TEXT UNIQUE NOT NULL,
-        password TEXT,
-        phone TEXT,
-        description TEXT,
-        banner_url TEXT,
-        logo_url TEXT,
-        trust_level INTEGER DEFAULT 1,
-        is_verified BOOLEAN DEFAULT 0,
-        is_active BOOLEAN DEFAULT 1,
-        total_sales INTEGER DEFAULT 0,
-        rating REAL DEFAULT 0.0,
-        review_count INTEGER DEFAULT 0,
-        location TEXT,
-        last_login DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Products table
-    await db.run(`
-      CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        seller_id INTEGER NOT NULL,
-        category_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        slug TEXT NOT NULL,
-        description TEXT,
-        price REAL NOT NULL,
-        image_url TEXT,
-        images TEXT,
-        stock INTEGER DEFAULT 0,
-        is_available BOOLEAN DEFAULT 1,
-        is_featured BOOLEAN DEFAULT 0,
-        views INTEGER DEFAULT 0,
-        sales INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (seller_id) REFERENCES sellers (id),
-        FOREIGN KEY (category_id) REFERENCES categories (id)
-      )
-    `);
-    
-    console.log('✅ Tables created successfully');
+
+    // Ensure full schema exists before seeding data
+    console.log('🔧 Initializing tables...');
+    const initDb = require('./initDb');
+    await initDb();
 
     // Seed Categories
     const categories = [
@@ -302,7 +241,12 @@ const seedDb = async () => {
     console.log(`   - ${products.length} products`);
     console.log(`   - ${reviews.length} reviews`);
     
-    process.exit(0);
+    return {
+      categories: categories.length,
+      sellers: sellers.length,
+      products: products.length,
+      reviews: reviews.length
+    };
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;
@@ -311,10 +255,12 @@ const seedDb = async () => {
 
 // Export the function for API use, but also run if called directly
 if (require.main === module) {
-  seedDb().catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
+  seedDb()
+    .then(() => process.exit(0))
+    .catch(error => {
+      console.error(error);
+      process.exit(1);
+    });
 }
 
 module.exports = seedDb;

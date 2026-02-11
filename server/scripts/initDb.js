@@ -207,7 +207,7 @@ const initDb = async () => {
     `);
 
     console.log('✅ Database initialized successfully!');
-    process.exit(0);
+    return true;
   } catch (error) {
     console.error('❌ Error initializing database:', error);
     throw error;
@@ -216,10 +216,12 @@ const initDb = async () => {
 
 // Export the function for use by other scripts, but also run if called directly
 if (require.main === module) {
-  initDb().catch(error => {
-    console.error(error);
-    process.exit(1);
-  });
+  initDb()
+    .then(() => process.exit(0))
+    .catch(error => {
+      console.error(error);
+      process.exit(1);
+    });
 }
 
 module.exports = initDb;
