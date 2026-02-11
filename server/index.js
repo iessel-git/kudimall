@@ -65,6 +65,32 @@ app.use('/api/buyer', buyerManagementRoutes);
 app.use('/api/delivery-auth', deliveryAuthRoutes);
 app.use('/api/delivery', deliveryManagementRoutes);
 
+// Root route - API information
+app.get('/', (req, res) => {
+  res.json({
+    name: 'KudiMall API',
+    version: '1.0.0',
+    status: 'running',
+    message: 'Welcome to KudiMall API',
+    endpoints: {
+      health: '/api/health',
+      categories: '/api/categories',
+      sellers: '/api/sellers',
+      products: '/api/products',
+      search: '/api/search',
+      reviews: '/api/reviews',
+      orders: '/api/orders',
+      'seller-applications': '/api/seller-applications',
+      auth: '/api/auth',
+      'seller-management': '/api/seller',
+      'buyer-auth': '/api/buyer-auth',
+      'buyer-management': '/api/buyer',
+      'delivery-auth': '/api/delivery-auth',
+      'delivery-management': '/api/delivery'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KudiMall API is running' });
