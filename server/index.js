@@ -118,11 +118,28 @@ app.listen(PORT, async () => {
   console.log(`🟢 KudiMall API Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Auto-seed database if empty (for free tier deployment)
+  // Auto-initialize and seed database if needed (for free tier deployment)
   try {
     const db = require('./models/database');
     
-    // Simple check - if any error occurs, just skip auto-seed
+    // Try to check if categories table exists
+    let tableExists = false;
+    try {
+      await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
+      tableExists = true;
+    } catch (error) {
+      // Table doesn't exist, need to initialize
+      console.log('📋 Database tables not found, initializing...');
+    }
+    
+    // Initialize database if tables don't exist
+    if (!tableExists) {
+      const initDb = require('./scripts/initDb');
+      await initDb();
+      console.log('✅ Database initialized successfully');
+    }
+    
+    // Check if database needs seeding
     const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
     
     if (categories && categories[0] && categories[0].count === 0) {
@@ -134,7 +151,7 @@ app.listen(PORT, async () => {
       console.log('📊 Database already contains data, skipping seed');
     }
   } catch (error) {
-    console.log('ℹ️  Auto-seed skipped:', error.message);
+    console.error('⚠️  Database initialization error:', error.message);
     console.log('💡 Use POST /api/seed-database to seed manually');
   }
 });
