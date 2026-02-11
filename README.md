@@ -223,6 +223,64 @@ DATABASE_PATH=./kudimall.db
 - [ ] Mobile apps (iOS & Android)
 - [ ] Admin panel for platform management
 
+## Deployment
+
+### Deploying to Render.com
+
+This repository includes a `render.yaml` configuration file for easy deployment to Render.com.
+
+#### Option 1: Deploy with Blueprint (Recommended)
+
+1. Fork or clone this repository to your GitHub account
+2. Go to [Render Dashboard](https://dashboard.render.com/)
+3. Click **New** → **Blueprint**
+4. Connect your GitHub repository
+5. Render will automatically detect the `render.yaml` file
+6. Set the required environment variables:
+   - `FRONTEND_URL` - Your frontend URL (if separate) or leave empty for API-only
+   - `JWT_SECRET` - Auto-generated or provide your own
+   - `EMAIL_USER` - (Optional) Gmail address for email features
+   - `EMAIL_PASSWORD` - (Optional) Gmail app password
+7. Click **Apply** to deploy
+
+#### Option 2: Manual Deployment
+
+1. Go to [Render Dashboard](https://dashboard.render.com/)
+2. Click **New** → **Web Service**
+3. Connect your GitHub repository
+4. Configure the service:
+   - **Name**: kudimall-api
+   - **Runtime**: Node
+   - **Build Command**: `cd server && npm install`
+   - **Start Command**: `cd server && node index.js`
+   - **Environment Variables**:
+     - `NODE_ENV` = `production`
+     - `PORT` = `5000`
+     - `DATABASE_PATH` = `./kudimall.db`
+     - `JWT_SECRET` = (generate a secure random string of at least 32 characters)
+     - `FRONTEND_URL` = (your frontend URL if applicable)
+5. Click **Create Web Service**
+
+#### Important Notes
+
+- **Database**: The application uses SQLite and automatically initializes and seeds the database on first startup
+- **Free Tier**: The application works on Render's free tier, but the database resets on each deployment
+- **Health Check**: The service includes a health check endpoint at `/api/health`
+- **Auto-initialization**: No manual database setup required - it happens automatically
+
+### Environment Variables
+
+Required for production:
+- `PORT` - Server port (default: 5000)
+- `NODE_ENV` - Set to `production`
+- `DATABASE_PATH` - Path to SQLite database file
+- `JWT_SECRET` - Secret key for JWT tokens (minimum 32 characters)
+
+Optional:
+- `FRONTEND_URL` - Frontend URL for CORS configuration
+- `EMAIL_USER` - Gmail address for email notifications
+- `EMAIL_PASSWORD` - Gmail app password
+
 ## Contributing
 
 We welcome contributions! Please follow these steps:
