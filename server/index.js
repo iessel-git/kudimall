@@ -170,28 +170,28 @@ app.get('/api/debug/schema', async (req, res) => {
     
     try {
       const sellersCount = await db.get('SELECT COUNT(*) as count FROM sellers');
-      counts.sellers = sellersCount?.count || 0;
+      counts.sellers = parseInt(sellersCount?.count, 10) || 0;
     } catch (e) {
       counts.sellers = 'error: ' + e.message;
     }
     
     try {
       const buyersCount = await db.get('SELECT COUNT(*) as count FROM buyers');
-      counts.buyers = buyersCount?.count || 0;
+      counts.buyers = parseInt(buyersCount?.count, 10) || 0;
     } catch (e) {
       counts.buyers = 'error: ' + e.message;
     }
     
     try {
       const productsCount = await db.get('SELECT COUNT(*) as count FROM products');
-      counts.products = productsCount?.count || 0;
+      counts.products = parseInt(productsCount?.count, 10) || 0;
     } catch (e) {
       counts.products = 'error: ' + e.message;
     }
     
     try {
       const categoriesCount = await db.get('SELECT COUNT(*) as count FROM categories');
-      counts.categories = categoriesCount?.count || 0;
+      counts.categories = parseInt(categoriesCount?.count, 10) || 0;
     } catch (e) {
       counts.categories = 'error: ' + e.message;
     }

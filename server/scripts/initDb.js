@@ -119,8 +119,18 @@ const initDb = async () => {
       );
     `);
     
-    await db.run(`ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);`);
-    await db.run(`ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP;`);
+    // Add missing buyers columns with error handling
+    try {
+      await db.run(`ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);`);
+    } catch (error) {
+      console.error('⚠️  Failed to add reset_token column to buyers table:', error.message);
+    }
+    
+    try {
+      await db.run(`ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP;`);
+    } catch (error) {
+      console.error('⚠️  Failed to add reset_token_expiry column to buyers table:', error.message);
+    }
     
     await db.run(`
       CREATE TABLE IF NOT EXISTS products (
