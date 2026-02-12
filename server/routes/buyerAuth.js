@@ -85,8 +85,14 @@ router.post('/signup', async (req, res) => {
     );
 
     // Validate that we got an ID back from the database
-    if (!result.rows || !result.rows[0] || !result.rows[0].id) {
-      throw new Error('Failed to retrieve buyer ID from database');
+    if (!result.rows) {
+      throw new Error('Database insert failed: No rows returned');
+    }
+    if (!result.rows[0]) {
+      throw new Error('Database insert failed: Empty result set (rowCount: ' + result.rowCount + ')');
+    }
+    if (!result.rows[0].id) {
+      throw new Error('Database insert failed: No ID in result');
     }
 
     const buyerId = result.rows[0].id;
