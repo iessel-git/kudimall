@@ -84,6 +84,17 @@ router.post('/signup', async (req, res) => {
       [name, email, hashedPassword, phone || null, address || null]
     );
 
+    // Validate that we got an ID back from the database
+    if (!result.rows) {
+      throw new Error('Database insert failed: No rows returned');
+    }
+    if (!result.rows[0]) {
+      throw new Error(`Database insert failed: Empty result set (rowCount: ${result.rowCount})`);
+    }
+    if (!result.rows[0].id) {
+      throw new Error('Database insert failed: No ID in result');
+    }
+
     const buyerId = result.rows[0].id;
 
     // Link any existing guest orders to this buyer account
