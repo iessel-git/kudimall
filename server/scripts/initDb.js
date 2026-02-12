@@ -62,6 +62,8 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);
+      ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP;
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
         seller_id INT REFERENCES sellers(id) ON DELETE CASCADE,
@@ -182,7 +184,22 @@ const initDb = async () => {
         product_categories TEXT,
         estimated_monthly_volume VARCHAR(100),
         instagram_handle VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        facebook_page VARCHAR(255),
+        twitter_handle VARCHAR(255),
+        tiktok_handle VARCHAR(255),
+        website_url TEXT,
+        bank_name VARCHAR(255),
+        account_holder_name VARCHAR(255),
+        account_number_last4 VARCHAR(4),
+        routing_number VARCHAR(50),
+        id_type VARCHAR(50),
+        id_number VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'pending',
+        admin_notes TEXT,
+        reviewed_by VARCHAR(255),
+        reviewed_at TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS inventory_alerts (
         id SERIAL PRIMARY KEY,
