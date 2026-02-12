@@ -109,9 +109,17 @@ If automatic initialization fails or you need to manually initialize:
 2. Run migrations (only if automatic initialization failed):
 ```bash
 cd server
+# Create base schema
 psql $DATABASE_URL -f migrations/init_schema_postgres.sql
+
+# Add missing columns for API routes
+psql $DATABASE_URL -f migrations/add_missing_columns.sql
+
+# Seed initial data
 node scripts/seedDb.js
 ```
+
+**Note:** The `add_missing_columns.sql` migration adds additional columns (like seller name, slug, email, location, description, etc.) that are used by various API routes but not included in the base schema.
 
 ##### Option 2: Using Local psql
 1. Get connection string from Render dashboard

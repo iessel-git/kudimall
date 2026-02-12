@@ -48,7 +48,13 @@ If automatic initialization doesn't work, run migrations manually:
 2. **Run migrations from correct directory:**
    ```bash
    cd server
+   # Create base schema
    psql $DATABASE_URL -f migrations/init_schema_postgres.sql
+   
+   # Add missing columns (if needed by your API routes)
+   psql $DATABASE_URL -f migrations/add_missing_columns.sql
+   
+   # Seed initial data
    node scripts/seedDb.js
    ```
 
