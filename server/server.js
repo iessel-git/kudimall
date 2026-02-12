@@ -1,2 +1,2 @@
-// Compatibility entry point when start command points to server.js
+// Compatibility entry point when the start command runs inside the server directory
 require("./index");
