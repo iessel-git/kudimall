@@ -51,7 +51,7 @@ router.get('/:slug/products', async (req, res) => {
        FROM products p
        JOIN sellers s ON p.seller_id = s.id
        JOIN categories c ON p.category_id = c.id
-       WHERE p.category_id = $1 AND p.is_available = 1
+       WHERE p.category_id = $1 AND p.is_available = TRUE
        ORDER BY p.is_featured DESC, p.created_at DESC
        LIMIT $2 OFFSET $3`,
       [category.id, parseInt(limit), offset]

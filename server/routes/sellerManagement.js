@@ -393,11 +393,11 @@ router.patch('/orders/:orderNumber/status', authenticateToken, async (req, res) 
       });
     }
 
-    const updates = [`status = $1`, 'updated_at = CURRENT_TIMESTAMP'];
+    const updates = ['status = $1', 'updated_at = CURRENT_TIMESTAMP'];
     const params = [status];
 
     if (tracking_number) {
-      updates.push(`tracking_number = $${params.length + 1}`);
+      updates.push('tracking_number = $' + (params.length + 1));
         params.push(tracking_number);
     }
 
