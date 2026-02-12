@@ -51,7 +51,7 @@ If automatic initialization doesn't work, run migrations manually:
    # Create base schema
    psql $DATABASE_URL -f migrations/init_schema_postgres.sql
    
-   # Add missing columns (if needed by your API routes)
+   # Add missing columns required by API routes
    psql $DATABASE_URL -f migrations/add_missing_columns.sql
    
    # Seed initial data
@@ -59,6 +59,8 @@ If automatic initialization doesn't work, run migrations manually:
    ```
 
    ⚠️ **Important:** Always `cd server` FIRST before running psql commands!
+   
+   **Note:** The `add_missing_columns.sql` migration is REQUIRED as it adds columns (like seller slug, trust_level, total_sales, location, description, etc.) that are used by various API routes.
 
 ### Option 3: Use the Initialization Script
 

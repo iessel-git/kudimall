@@ -20,10 +20,7 @@ cd "$SERVER_DIR"
 # Run the main schema initialization
 # Note: This uses CREATE TABLE IF NOT EXISTS, so it's safe to run multiple times
 echo "📦 Creating database schema..."
-psql "$DATABASE_URL" -f migrations/init_schema_postgres.sql 2>&1 | tee /tmp/db_init.log
-
-# Check if there were errors (ignoring warnings about existing tables)
-if grep -qi "ERROR" /tmp/db_init.log && ! grep -qi "already exists" /tmp/db_init.log; then
+if psql "$DATABASE_URL" -f migrations/init_schema_postgres.sql 2>&1 | grep -v "already exists" | grep -qi "ERROR"; then
     echo "❌ Database initialization failed with errors"
     exit 1
 else
@@ -33,10 +30,9 @@ fi
 # Run additional columns migration
 # Note: This uses ADD COLUMN IF NOT EXISTS, so it's safe to run multiple times
 echo "📦 Adding additional columns for API routes..."
-psql "$DATABASE_URL" -f migrations/add_missing_columns.sql 2>&1 | tee /tmp/db_columns.log
-
-if grep -qi "ERROR" /tmp/db_columns.log && ! grep -qi "already exists" /tmp/db_columns.log; then
-    echo "⚠️  Some columns could not be added (this may be OK if they already exist)"
+if psql "$DATABASE_URL" -f migrations/add_missing_columns.sql 2>&1 | grep -v "already exists" | grep -qi "ERROR"; then
+    echo "❌ Failed to add additional columns"
+    exit 1
 else
     echo "✅ Additional columns added successfully"
 fi
