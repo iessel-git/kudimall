@@ -145,7 +145,63 @@ npm install
 npm start
 ```
 
-## API Endpoints
+## 📚 API Documentation
+
+### Complete API Reference
+
+KudiMall provides a comprehensive REST API with **75+ endpoints** across 12 modules:
+
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Complete API reference with detailed request/response examples
+- **[API_SUMMARY.md](./API_SUMMARY.md)** - Quick reference guide with all endpoints listed
+
+### API Modules
+
+1. **System APIs** (3 endpoints) - Health checks, seeding
+2. **Seller Authentication** (6 endpoints) - Signup, login, email verification
+3. **Seller Management** (9 endpoints) - Products, orders, statistics
+4. **Buyer Authentication** (7 endpoints) - Signup, login, password management
+5. **Buyer Management** (4 endpoints) - Orders, confirmations, issues
+6. **Delivery Authentication** (3 endpoints) - Delivery account management
+7. **Delivery Management** (3 endpoints) - Order claims, delivery proof
+8. **Public Products** (3 endpoints) - Browse products, reviews
+9. **Public Sellers** (6 endpoints) - Browse sellers, follow/unfollow
+10. **Categories** (3 endpoints) - List categories, browse by category
+11. **Orders** (2 endpoints) - Create orders, track orders
+12. **Search** (1 endpoint) - Global search across all resources
+13. **Reviews** (1 endpoint) - Submit product reviews
+14. **Seller Applications** (4 endpoints) - Apply to become a seller
+
+### Quick API Examples
+
+**Health Check:**
+```bash
+curl http://localhost:5000/api/health
+```
+
+**Get All Products:**
+```bash
+curl "http://localhost:5000/api/products?page=1&limit=20"
+```
+
+**Search:**
+```bash
+curl "http://localhost:5000/api/search?q=headphones&type=products"
+```
+
+**Seller Login:**
+```bash
+curl -X POST http://localhost:5000/api/auth/seller/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "seller@example.com", "password": "password"}'
+```
+
+For complete documentation with all endpoints, request/response formats, and authentication details, see:
+- **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Full documentation
+- **[API_SUMMARY.md](./API_SUMMARY.md)** - Quick reference
+
+---
+
+## Legacy API Reference (Deprecated - See API_DOCUMENTATION.md)
 
 ### Categories
 - `GET /api/categories` - Get all categories
