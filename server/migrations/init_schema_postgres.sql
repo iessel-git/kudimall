@@ -196,13 +196,13 @@ CREATE TABLE IF NOT EXISTS follows (
 CREATE TABLE IF NOT EXISTS seller_applications (
     id SERIAL PRIMARY KEY,
     application_id VARCHAR(100) UNIQUE NOT NULL,
-    
+
     -- Personal Information
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(50) NOT NULL,
-    
+
     -- Business Information
     business_name VARCHAR(255) NOT NULL,
     business_type VARCHAR(100) NOT NULL,
@@ -212,36 +212,36 @@ CREATE TABLE IF NOT EXISTS seller_applications (
     zip_code VARCHAR(20) NOT NULL,
     country VARCHAR(100) NOT NULL,
     tax_id VARCHAR(100),
-    
+
     -- Store Information
     store_name VARCHAR(255) NOT NULL,
     store_description TEXT NOT NULL,
     product_categories TEXT,
     estimated_monthly_volume VARCHAR(50),
-    
+
     -- Social Media
     instagram_handle VARCHAR(255),
     facebook_page VARCHAR(255),
     twitter_handle VARCHAR(255),
     tiktok_handle VARCHAR(255),
     website_url TEXT,
-    
+
     -- Banking Information
     bank_name VARCHAR(255) NOT NULL,
     account_holder_name VARCHAR(255) NOT NULL,
     account_number_last4 VARCHAR(4) NOT NULL,
     routing_number VARCHAR(50) NOT NULL,
-    
+
     -- Verification
     id_type VARCHAR(50) NOT NULL,
     id_number VARCHAR(100) NOT NULL,
-    
+
     -- Status and Admin fields
     status VARCHAR(50) DEFAULT 'pending',
     admin_notes TEXT,
     reviewed_by VARCHAR(255),
     reviewed_at TIMESTAMP,
-    
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -257,7 +257,7 @@ ON CONFLICT DO NOTHING;
 
 -- Coupons
 INSERT INTO coupons (code, discount_type, discount_value, min_purchase, max_discount, usage_limit, valid_until)
-VALUES 
+VALUES
 ('WELCOME10', 'percentage', 10.00, 50.00, 20.00, 100, NOW() + INTERVAL '30 days'),
 ('FIRST20', 'fixed', 20.00, 100.00, NULL, 50, NOW() + INTERVAL '60 days'),
 ('FREESHIP', 'fixed', 5.00, 0.00, NULL, NULL, NOW() + INTERVAL '90 days')
@@ -270,7 +270,7 @@ INSERT INTO users (name, email, password, phone) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Sellers (link to Test Seller user)
-INSERT INTO sellers (user_id, shop_name, address, is_verified) 
+INSERT INTO sellers (user_id, shop_name, address, is_verified)
 SELECT id, 'Test Seller Shop', 'Accra, Ghana', TRUE FROM users WHERE email='seller@example.com'
 ON CONFLICT DO NOTHING;
 
