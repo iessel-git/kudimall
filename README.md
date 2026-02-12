@@ -5,7 +5,10 @@
 
 ## 🚨 Deployment Issue? Read This First!
 
-If you're seeing a **"No such file or directory"** error during Render deployment, see [RENDER_FIX_INSTRUCTIONS.md](./RENDER_FIX_INSTRUCTIONS.md) for a quick fix.
+If you're seeing a **"No such file or directory"** error during Render deployment:
+- **Quick Fix (2 min):** [QUICK_FIX.txt](./QUICK_FIX.txt)
+- **Visual Guide:** [DEPLOYMENT_VISUAL_GUIDE.md](./DEPLOYMENT_VISUAL_GUIDE.md)
+- **All Deployment Docs:** [DEPLOYMENT_DOCS_INDEX.md](./DEPLOYMENT_DOCS_INDEX.md)
 
 **TL;DR:** Change your Render start command to `cd server && node index.js` in the dashboard.
 
