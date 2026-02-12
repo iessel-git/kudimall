@@ -1,0 +1,66 @@
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│  🔧 QUICK FIX: Render Deployment Error                     │
+│  "No such file or directory"                                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+ERROR YOU'RE SEEING:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+psql: error: server/migrations/init_schema_postgres.sql: 
+No such file or directory
+===> Exited with status 1
+
+
+THE FIX (Takes 2 minutes):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Open Render Dashboard
+   → Go to: https://dashboard.render.com
+   → Click on your "kudimall-api" service
+
+Step 2: Edit Start Command
+   → Click "Settings" in left sidebar
+   → Scroll to "Build & Deploy" section
+   → Find "Start Command" field
+   
+   ❌ REMOVE THIS (if present):
+   psql $DATABASE_URL -f server/migrations/init_schema_postgres.sql && node server.js
+   
+   ✅ CHANGE TO THIS:
+   cd server && node index.js
+
+Step 3: Save & Deploy
+   → Click "Save Changes" button
+   → Render will automatically redeploy
+   → Wait 2-3 minutes for deployment
+
+Step 4: Verify Success
+   → Check deployment logs for:
+   ✅ "Database initialized and seeded successfully"
+   
+   → Test the API:
+   curl https://{your-app-name}.onrender.com/api/health
+
+
+WHY THIS WORKS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The app automatically initializes the database on startup.
+No manual psql commands needed!
+
+
+DETAILED INSTRUCTIONS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+See: RENDER_FIX_INSTRUCTIONS.md
+
+
+STILL NOT WORKING?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Check logs in Render Dashboard
+2. Verify DATABASE_URL environment variable is set
+3. See troubleshooting in RENDER_FIX_INSTRUCTIONS.md
+
+
+┌─────────────────────────────────────────────────────────────┐
+│ Need more help? Open an issue on GitHub                    │
+└─────────────────────────────────────────────────────────────┘

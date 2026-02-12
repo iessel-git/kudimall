@@ -1,5 +1,9 @@
 # Render Deployment Fix - "No such file or directory" Error
 
+> ✨ **NEW:** For the most comprehensive fix instructions, see [RENDER_FIX_INSTRUCTIONS.md](./RENDER_FIX_INSTRUCTIONS.md)
+> 
+> 📋 **QUICK REFERENCE:** See [QUICK_FIX.txt](./QUICK_FIX.txt) for a step-by-step checklist
+
 ## Problem
 
 Deployment to Render fails with error:

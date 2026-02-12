@@ -1,5 +1,7 @@
 # KudiMall Deployment Guide
 
+> ⚠️ **Having deployment issues?** If you're seeing "No such file or directory" error, see [RENDER_FIX_INSTRUCTIONS.md](./RENDER_FIX_INSTRUCTIONS.md) or [QUICK_FIX.txt](./QUICK_FIX.txt) for immediate help.
+
 ## Deployment to Render.com
 
 ### Prerequisites

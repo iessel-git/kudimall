@@ -3,6 +3,17 @@
 ![KudiMall](https://img.shields.io/badge/status-active-success.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+## 🚨 Deployment Issue? Read This First!
+
+If you're seeing a **"No such file or directory"** error during Render deployment:
+- **Quick Fix (2 min):** [QUICK_FIX.txt](./QUICK_FIX.txt)
+- **Visual Guide:** [DEPLOYMENT_VISUAL_GUIDE.md](./DEPLOYMENT_VISUAL_GUIDE.md)
+- **All Deployment Docs:** [DEPLOYMENT_DOCS_INDEX.md](./DEPLOYMENT_DOCS_INDEX.md)
+
+**TL;DR:** Change your Render start command to `cd server && node index.js` in the dashboard.
+
+---
+
 ## Overview
 
 **KudiMall is both a destination marketplace and a social-commerce checkout platform.**
