@@ -51,7 +51,7 @@ Both paths lead to the same trusted checkout experience with escrow protection.
 
 ### Backend
 - **Node.js** with Express
-- **SQLite** database (easily upgradeable to PostgreSQL/MySQL)
+- **PostgreSQL** database for production-grade data management
 - **RESTful API** architecture
 
 ### Frontend
@@ -181,7 +181,13 @@ Create a `.env` file in the `server` directory:
 ```env
 PORT=5000
 NODE_ENV=development
-DATABASE_PATH=./kudimall.db
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=kudimall_dev
+DB_USER=postgres
+DB_PASSWORD=your_password
+# Or use DATABASE_URL for production (e.g., on Render)
+DATABASE_URL=postgresql://user:password@host:5432/database
 ```
 
 ## Messaging & Value Proposition
