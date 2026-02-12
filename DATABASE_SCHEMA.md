@@ -193,7 +193,7 @@ The KudiMall database consists of **17 main tables**:
 
 **Indexes:**
 - PRIMARY KEY on `id`
-- UNIQUE constraint on `(cart_id, product_id)`
+- UNIQUE constraint on `(cart_id, product_id)` - Ensures each product appears only once per cart; quantity updates modify the existing record
 
 ---
 
@@ -221,9 +221,11 @@ The KudiMall database consists of **17 main tables**:
 - UNIQUE constraint on `code`
 
 **Seed Data:**
-- WELCOME10 (10% off, min ₵50)
-- FIRST20 (₵20 off, min ₵100)
-- FREESHIP (₵5 off)
+- WELCOME10 (10% off, min GHS 50)
+- FIRST20 (GHS 20 off, min GHS 100)
+- FREESHIP (GHS 5 off)
+
+*Note: Currency values in the database are stored as numeric amounts. The Ghanaian Cedi (GHS) is the primary currency used in the application.*
 
 ---
 
