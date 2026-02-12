@@ -65,7 +65,7 @@ const setPasswordForSeller = async () => {
 
     // Update seller
     await db.run(
-      'UPDATE sellers SET password = ?, is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE sellers SET password = $1, is_active = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [hashedPassword, selectedSeller.id]
     );
 

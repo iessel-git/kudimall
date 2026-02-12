@@ -46,7 +46,7 @@ router.post('/signup', async (req, res) => {
 
     const result = await db.run(
       `INSERT INTO delivery_users (name, email, password, phone, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      VALUES ($1, $2, $3, $4, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [name, email, hashedPassword, phone || null]
     );
 
