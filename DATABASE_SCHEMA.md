@@ -12,7 +12,7 @@ This document provides a comprehensive overview of all databases, tables, and co
 
 ## Tables Overview
 
-The KudiMall database consists of **16 main tables**:
+The KudiMall database consists of **17 main tables**:
 
 1. [users](#1-users)
 2. [sellers](#2-sellers)
@@ -205,7 +205,7 @@ The KudiMall database consists of **16 main tables**:
 |--------|-----------|-------------|-------------|
 | id | SERIAL | PRIMARY KEY | Unique coupon identifier |
 | code | VARCHAR(50) | UNIQUE, NOT NULL | Coupon code |
-| discount_type | VARCHAR(20) | CHECK (IN 'percentage', 'fixed') | Type of discount |
+| discount_type | VARCHAR(20) | CHECK (discount_type IN ('percentage', 'fixed')) | Type of discount |
 | discount_value | NUMERIC(10,2) | NOT NULL | Discount amount/percentage |
 | min_purchase | NUMERIC(10,2) | DEFAULT 0 | Minimum purchase amount |
 | max_discount | NUMERIC(10,2) | | Maximum discount amount |
@@ -332,7 +332,7 @@ The KudiMall database consists of **16 main tables**:
 | id | SERIAL | PRIMARY KEY | Unique alert identifier |
 | product_id | INT | REFERENCES products(id) ON DELETE CASCADE | Product with alert |
 | seller_id | INT | REFERENCES sellers(id) ON DELETE CASCADE | Seller to notify |
-| alert_type | VARCHAR(20) | CHECK (IN 'low_stock', 'out_of_stock') | Type of alert |
+| alert_type | VARCHAR(20) | CHECK (alert_type IN ('low_stock', 'out_of_stock')) | Type of alert |
 | threshold | INT | DEFAULT 5 | Stock threshold for alert |
 | is_read | BOOLEAN | DEFAULT FALSE | Alert read status |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Alert creation timestamp |
@@ -425,7 +425,7 @@ The KudiMall database consists of **16 main tables**:
 | product_id | INTEGER | REFERENCES products(id) ON DELETE CASCADE | Reviewed product |
 | seller_id | INTEGER | REFERENCES sellers(id) ON DELETE CASCADE | Reviewed seller |
 | buyer_name | VARCHAR(255) | NOT NULL | Name of reviewer |
-| rating | INTEGER | NOT NULL, CHECK (1-5) | Rating value (1-5 stars) |
+| rating | INTEGER | NOT NULL, CHECK (rating >= 1 AND rating <= 5) | Rating value (1-5 stars) |
 | comment | TEXT | | Review comment/text |
 | created_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Review creation timestamp |
 
