@@ -6,6 +6,9 @@ services:
     region: oregon
     plan: free
     buildCommand: cd server && npm install
+    # IMPORTANT: Do NOT modify startCommand to include database migrations
+    # The application auto-initializes the database on first startup via server/index.js
+    # Database tables are created automatically using server/scripts/initDb.js
     startCommand: cd server && node index.js
     envVars:
       - key: NODE_ENV
