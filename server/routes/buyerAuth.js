@@ -79,7 +79,7 @@ router.post('/signup', async (req, res) => {
     // Insert new buyer
     const result = await db.run(
       `INSERT INTO buyers (name, email, password, phone, default_address, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ($1, $2, $3, $4, $5, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       RETURNING id`,
       [name, email, hashedPassword, phone || null, address || null]
     );
