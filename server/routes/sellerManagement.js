@@ -111,7 +111,7 @@ router.post('/products', authenticateToken, async (req, res) => {
       INSERT INTO products (
         seller_id, category_id, name, slug, description, price, 
         stock, image_url, images, is_available, is_featured
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE)
       `, [
       req.seller.id,
       category_id,
@@ -122,7 +122,7 @@ router.post('/products', authenticateToken, async (req, res) => {
       stock || 0,
       image_url || null,
       images ? JSON.stringify(images) : null,
-      is_available !== undefined ? is_available : 1
+      is_available !== undefined ? is_available : true
     ]);
 
     const product = await db.get('SELECT * FROM products WHERE id = $1', [result.id]);
