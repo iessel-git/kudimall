@@ -315,18 +315,18 @@ router.get('/', async (req, res) => {
     const params = [];
     
     if (status) {
-      query += ' WHERE status = ?';
+      query += ' WHERE status = $1';
       params.push(status);
     }
     
     query += ' ORDER BY created_at DESC';
     
     if (limit) {
-      query += ' LIMIT ?';
+      query += ` LIMIT $${params.length + 1}`;
       params.push(parseInt(limit));
       
       if (offset) {
-        query += ' OFFSET ?';
+        query += ` OFFSET $${params.length + 1}`;
         params.push(parseInt(offset));
       }
     }
@@ -335,7 +335,7 @@ router.get('/', async (req, res) => {
     
     // Get total count
     const countQuery = status 
-      ? 'SELECT COUNT(*) as total FROM seller_applications WHERE status = ?' 
+      ? 'SELECT COUNT(*) as total FROM seller_applications WHERE status = $1' 
       : 'SELECT COUNT(*) as total FROM seller_applications';
     const countResult = await db.get(countQuery, status ? [status] : []);
     
@@ -355,7 +355,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const application = await db.get(
-      'SELECT * FROM seller_applications WHERE id = ? OR application_id = ?',
+      'SELECT * FROM seller_applications WHERE id = $1 OR application_id = $2',
       [req.params.id, req.params.id]
     );
     
@@ -376,7 +376,7 @@ router.patch('/:id', async (req, res) => {
     const { status, admin_notes, reviewed_by } = req.body;
     
     const application = await db.get(
-      'SELECT * FROM seller_applications WHERE id = ? OR application_id = ?',
+      'SELECT * FROM seller_applications WHERE id = $1 OR application_id = $2',
       [req.params.id, req.params.id]
     );
     
@@ -394,7 +394,7 @@ router.patch('/:id', async (req, res) => {
     const params = [];
     
     if (status) {
-      updates.push('status = ?');
+      updates.push(`status = $${params.length + 1}`);
       params.push(status);
       
       if (status === 'approved' || status === 'rejected') {
@@ -403,12 +403,12 @@ router.patch('/:id', async (req, res) => {
     }
     
     if (admin_notes !== undefined) {
-      updates.push('admin_notes = ?');
+      updates.push(`admin_notes = $${params.length + 1}`);
       params.push(admin_notes);
     }
     
     if (reviewed_by) {
-      updates.push('reviewed_by = ?');
+      updates.push(`reviewed_by = $${params.length + 1}`);
       params.push(reviewed_by);
     }
     
@@ -417,12 +417,12 @@ router.patch('/:id', async (req, res) => {
     params.push(application.id);
     
     await db.run(
-      `UPDATE seller_applications SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE seller_applications SET ${updates.join(', ')} WHERE id = $${params.length}`,
       params
     );
     
     const updatedApplication = await db.get(
-      'SELECT * FROM seller_applications WHERE id = ?',
+      'SELECT * FROM seller_applications WHERE id = $1',
       [application.id]
     );
     

@@ -36,21 +36,21 @@ router.get('/', async (req, res) => {
     }
     
     if (min_price) {
-      query += ' AND p.price >= ?';
+      query += ` AND p.price >= $${params.length + 1}`;
       params.push(parseFloat(min_price));
     }
     
     if (max_price) {
-      query += ' AND p.price <= ?';
+      query += ` AND p.price <= $${params.length + 1}`;
       params.push(parseFloat(max_price));
     }
     
     if (trust_level) {
-      query += ' AND s.trust_level >= ?';
+      query += ` AND s.trust_level >= $${params.length + 1}`;
       params.push(parseInt(trust_level));
     }
     
-    query += ' ORDER BY p.is_featured DESC, p.created_at DESC LIMIT ? OFFSET ?';
+    query += ` ORDER BY p.is_featured DESC, p.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(parseInt(limit), offset);
     
     const products = await db.all(query, params);
@@ -70,7 +70,7 @@ router.get('/:slug', async (req, res) => {
        FROM products p
        JOIN sellers s ON p.seller_id = s.id
        JOIN categories c ON p.category_id = c.id
-       WHERE p.slug = ?`,
+       WHERE p.slug = $1`,
       [req.params.slug]
     );
     
@@ -80,7 +80,7 @@ router.get('/:slug', async (req, res) => {
     
     // Increment view count
     await db.run(
-      'UPDATE products SET views = views + 1 WHERE id = ?',
+      'UPDATE products SET views = views + 1 WHERE id = $1',
       [product.id]
     );
     
@@ -94,7 +94,7 @@ router.get('/:slug', async (req, res) => {
 router.get('/:slug/reviews', async (req, res) => {
   try {
     const product = await db.get(
-      'SELECT id FROM products WHERE slug = ?',
+      'SELECT id FROM products WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -103,7 +103,7 @@ router.get('/:slug/reviews', async (req, res) => {
     }
     
     const reviews = await db.all(
-      'SELECT * FROM reviews WHERE product_id = ? ORDER BY created_at DESC',
+      'SELECT * FROM reviews WHERE product_id = $1 ORDER BY created_at DESC',
       [product.id]
     );
     

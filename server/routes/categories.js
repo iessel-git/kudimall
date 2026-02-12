@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const category = await db.get(
-      'SELECT * FROM categories WHERE slug = ?',
+      'SELECT * FROM categories WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -37,7 +37,7 @@ router.get('/:slug/products', async (req, res) => {
     const offset = (page - 1) * limit;
     
     const category = await db.get(
-      'SELECT id FROM categories WHERE slug = ?',
+      'SELECT id FROM categories WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -51,9 +51,9 @@ router.get('/:slug/products', async (req, res) => {
        FROM products p
        JOIN sellers s ON p.seller_id = s.id
        JOIN categories c ON p.category_id = c.id
-       WHERE p.category_id = ? AND p.is_available = 1
+       WHERE p.category_id = $1 AND p.is_available = 1
        ORDER BY p.is_featured DESC, p.created_at DESC
-       LIMIT ? OFFSET ?`,
+       LIMIT $2 OFFSET $3`,
       [category.id, parseInt(limit), offset]
     );
     
