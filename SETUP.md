@@ -9,34 +9,53 @@ npm run install:all
 
 This command will install:
 - Root dependencies (concurrently, nodemon)
-- Server dependencies (Express, SQLite, CORS, etc.)
+- Server dependencies (Express, PostgreSQL, CORS, etc.)
 - Client dependencies (React, React Router, Axios, etc.)
 
-### 2. Initialize Database
+### 2. Set Up PostgreSQL Database
+Ensure you have PostgreSQL installed and running on your system.
+
+Create a database for KudiMall:
+```bash
+psql -U postgres
+CREATE DATABASE kudimall_dev;
+\q
+```
+
+Create a `.env` file in the `server` directory with your database credentials:
+```env
+PORT=5000
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=kudimall_dev
+DB_USER=postgres
+DB_PASSWORD=your_password
+```
+
+### 3. Initialize Database
 ```bash
 cd server
 npm run init-db
 ```
 
-This creates the SQLite database with all required tables:
+This creates the PostgreSQL database schema with all required tables and seeds sample data:
+- users
 - categories
 - sellers
 - products
 - orders
 - reviews
 - follows
+- coupons
+- carts
 
-### 3. Seed Sample Data
-```bash
-cd server
-npm run seed-db
-```
-
-This populates the database with:
-- 8 product categories
-- 4 verified sellers
-- 10 sample products
-- 4 customer reviews
+And populates the database with:
+- 3 product categories
+- 2 test users (buyer and seller)
+- 1 verified seller
+- 3 sample products
+- 3 coupons
 
 ### 4. Start Development Servers
 ```bash
@@ -191,7 +210,7 @@ Visit `http://localhost:3000` and test:
 
 ### Backend (Node.js + Express)
 - RESTful API design
-- SQLite database
+- PostgreSQL database (properly configured)
 - Modular route structure
 - Database abstraction layer
 

@@ -5,6 +5,15 @@ const initDb = async () => {
   try {
     console.log('🔧 Initializing KudiMall Database...');
     await db.run(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        phone VARCHAR(20),
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -45,6 +54,36 @@ const initDb = async () => {
         is_available BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      CREATE TABLE IF NOT EXISTS carts (
+        id SERIAL PRIMARY KEY,
+        user_id INT REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS cart_items (
+        id SERIAL PRIMARY KEY,
+        cart_id INT REFERENCES carts(id) ON DELETE CASCADE,
+        product_id INT REFERENCES products(id) ON DELETE CASCADE,
+        quantity INT NOT NULL DEFAULT 1,
+        price NUMERIC(10,2) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(cart_id, product_id)
+      );
+      CREATE TABLE IF NOT EXISTS coupons (
+        id SERIAL PRIMARY KEY,
+        code VARCHAR(50) UNIQUE NOT NULL,
+        discount_type VARCHAR(20) CHECK (discount_type IN ('percentage', 'fixed')),
+        discount_value NUMERIC(10,2) NOT NULL,
+        min_purchase NUMERIC(10,2) DEFAULT 0,
+        max_discount NUMERIC(10,2),
+        usage_limit INT,
+        used_count INT DEFAULT 0,
+        valid_from TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        valid_until TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
         user_id INT REFERENCES users(id) ON DELETE SET NULL,
@@ -65,6 +104,13 @@ const initDb = async () => {
         cancelled_by VARCHAR(20),
         cancelled_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS order_items (
+        id SERIAL PRIMARY KEY,
+        order_id INT REFERENCES orders(id) ON DELETE CASCADE,
+        product_id INT REFERENCES products(id) ON DELETE SET NULL,
+        quantity INT NOT NULL,
+        price NUMERIC(10,2) NOT NULL
       );
       CREATE TABLE IF NOT EXISTS delivery_users (
         id SERIAL PRIMARY KEY,
@@ -118,7 +164,26 @@ const initDb = async () => {
         instagram_handle VARCHAR(100),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      -- Add more tables as needed for coupons, cart, escrow, etc.
+      CREATE TABLE IF NOT EXISTS inventory_alerts (
+        id SERIAL PRIMARY KEY,
+        product_id INT REFERENCES products(id) ON DELETE CASCADE,
+        seller_id INT REFERENCES sellers(id) ON DELETE CASCADE,
+        alert_type VARCHAR(20) CHECK (alert_type IN ('low_stock', 'out_of_stock')),
+        threshold INT DEFAULT 5,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE TABLE IF NOT EXISTS payment_webhooks (
+        id SERIAL PRIMARY KEY,
+        provider VARCHAR(50) NOT NULL,
+        event_type VARCHAR(100) NOT NULL,
+        reference VARCHAR(100),
+        payload JSONB NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        error_message TEXT,
+        processed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
     console.log('✅ Database schema initialized.');
   } catch (err) {

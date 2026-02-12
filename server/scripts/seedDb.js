@@ -74,18 +74,17 @@ const seedDb = async () => {
 
     console.log('✅ Database seeded successfully!');
     console.log(`   - ${categories.length} categories`);
-    return { categories: categories.length };
-    console.log('✅ Database seeded successfully!');
-    console.log(`   - ${categories.length} categories`);
-    console.log(`   - ${sellers.length} sellers`);
-    console.log(`   - ${products.length} products`);
-    console.log(`   - ${reviews.length} reviews`);
+    console.log(`   - 2 users`);
+    console.log(`   - 1 seller`);
+    console.log(`   - 3 products`);
+    console.log(`   - 3 coupons`);
     
     return {
       categories: categories.length,
-      sellers: sellers.length,
-      products: products.length,
-      reviews: reviews.length
+      users: 2,
+      sellers: 1,
+      products: 3,
+      coupons: 3
     };
   } catch (error) {
     console.error('❌ Error seeding database:', error);

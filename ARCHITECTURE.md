@@ -49,7 +49,7 @@
 ═══════════════════════════════════════════════════════════════════════
 
                               BACKEND API
-                      (Node.js + Express + SQLite)
+                      (Node.js + Express + PostgreSQL)
 
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          API ENDPOINTS                               │
@@ -70,7 +70,7 @@
                                    │
                                    ▼
                         ┌────────────────────┐
-                        │   SQLite DATABASE  │
+                        │   PostgreSQL DATABASE  │
                         ├────────────────────┤
                         │                    │
                         │  • categories      │
