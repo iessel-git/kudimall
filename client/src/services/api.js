@@ -228,4 +228,110 @@ export const uploadDeliveryProofPhotoByDelivery = (orderNumber, formData) => {
   });
 };
 
+// ============================================================================
+// WISHLIST
+// ============================================================================
+export const getWishlist = () => {
+  const token = localStorage.getItem('buyer_token');
+  return api.get('/wishlist', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const addToWishlist = (productId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post('/wishlist/add', { product_id: productId }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const removeFromWishlist = (productId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.delete(`/wishlist/remove/${productId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const checkWishlist = (productId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.get(`/wishlist/check/${productId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const moveWishlistToCart = (productId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post(`/wishlist/move-to-cart/${productId}`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+// ============================================================================
+// SHOPPING CART
+// ============================================================================
+export const getCart = () => {
+  const token = localStorage.getItem('buyer_token');
+  return api.get('/cart', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const addToCart = (productId, quantity = 1) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post('/cart/add', { product_id: productId, quantity }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const updateCartItem = (itemId, quantity) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.put(`/cart/update/${itemId}`, { quantity }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const removeFromCart = (itemId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.delete(`/cart/remove/${itemId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const saveCartItemForLater = (itemId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post(`/cart/save-for-later/${itemId}`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const moveCartItemToCart = (itemId) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post(`/cart/move-to-cart/${itemId}`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const getCartCount = () => {
+  const token = localStorage.getItem('buyer_token');
+  return api.get('/cart/count', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const clearCart = () => {
+  const token = localStorage.getItem('buyer_token');
+  return api.delete('/cart/clear', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+// ============================================================================
+// FLASH DEALS
+// ============================================================================
+export const getFlashDeals = (params) => api.get('/deals', { params });
+export const getTopDeals = (limit) => api.get('/deals/top', { params: { limit } });
+export const getEndingSoonDeals = () => api.get('/deals/ending-soon');
+export const getUpcomingDeals = () => api.get('/deals/upcoming');
+export const getProductDeal = (productId) => api.get(`/deals/product/${productId}`);
+
 export default api;

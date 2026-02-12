@@ -31,6 +31,9 @@ import ReceiptConfirmationPage from './pages/ReceiptConfirmationPage';
 import DeliveryLoginPage from './pages/DeliveryLoginPage';
 import DeliverySignupPage from './pages/DeliverySignupPage';
 import DeliveryDashboardPage from './pages/DeliveryDashboardPage';
+import CartPage from './pages/CartPage';
+import WishlistPage from './pages/WishlistPage';
+import DealsPage from './pages/DealsPage';
 import './styles/App.css';
 import './styles/MobileAnimations.css';
 
@@ -71,6 +74,9 @@ function App() {
             <Route path="/delivery/dashboard" element={<DeliveryDashboardPage />} />
             <Route path="/admin/applications" element={<AdminApplicationsPage />} />
             <Route path="/receipt-confirmation" element={<ReceiptConfirmationPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/deals" element={<DealsPage />} />
           </Routes>
         </main>
         <Footer />

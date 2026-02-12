@@ -1,26 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getCategories, getSellers, getProducts } from '../services/api';
+import { getCategories, getSellers, getProducts, getTopDeals } from '../services/api';
 import '../styles/HomePage.css';
 
 const HomePage = () => {
   const [categories, setCategories] = useState([]);
   const [featuredSellers, setFeaturedSellers] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [flashDeals, setFlashDeals] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesRes, sellersRes, productsRes] = await Promise.all([
+        const [categoriesRes, sellersRes, productsRes, dealsRes] = await Promise.all([
           getCategories(),
           getSellers({ featured: true, limit: 6 }),
-          getProducts({ featured: true, limit: 8 })
+          getProducts({ featured: true, limit: 8 }),
+          getTopDeals(4).catch(() => ({ data: { deals: [] } }))
         ]);
         
         setCategories(categoriesRes.data);
         setFeaturedSellers(sellersRes.data);
         setFeaturedProducts(productsRes.data);
+        setFlashDeals(dealsRes.data.deals || []);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -68,6 +71,52 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* Flash Deals Section */}
+      {flashDeals.length > 0 && (
+        <section className="flash-deals-section">
+          <div className="container">
+            <div className="section-header-with-link">
+              <h2 className="section-title">🔥 Flash Deals</h2>
+              <Link to="/deals" className="view-all-link">View All Deals →</Link>
+            </div>
+            <div className="flash-deals-grid">
+              {flashDeals.map((deal) => (
+                <Link
+                  key={deal.id}
+                  to={`/product/${deal.slug}`}
+                  className="flash-deal-card"
+                >
+                  <div className="deal-discount-badge">-{deal.discount_percentage}%</div>
+                  <div className="deal-image">
+                    {deal.image_url ? (
+                      <img src={deal.image_url} alt={deal.name} />
+                    ) : (
+                      <div className="placeholder-image">📷</div>
+                    )}
+                  </div>
+                  <div className="deal-info">
+                    <h3>{deal.name}</h3>
+                    <div className="deal-prices">
+                      <span className="original-price">₵{deal.original_price}</span>
+                      <span className="deal-price">₵{deal.deal_price}</span>
+                    </div>
+                    <div className="deal-progress">
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${Math.min((deal.quantity_sold / deal.quantity_available) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="progress-text">{deal.quantity_sold} sold</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Categories Section */}
       <section className="categories-section" id="categories">
