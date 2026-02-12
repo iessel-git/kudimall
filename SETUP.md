@@ -210,7 +210,7 @@ Visit `http://localhost:3000` and test:
 
 ### Backend (Node.js + Express)
 - RESTful API design
-- SQLite database
+- PostgreSQL database (properly configured)
 - Modular route structure
 - Database abstraction layer
 

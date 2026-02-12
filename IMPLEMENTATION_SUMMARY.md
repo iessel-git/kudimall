@@ -8,7 +8,7 @@ This document summarizes the full implementation of KudiMall as both a **destina
 
 ## 📋 What Was Built
 
-### 1. Complete Backend API (Node.js + Express + SQLite)
+### 1. Complete Backend API (Node.js + Express + PostgreSQL)
 
 #### Database Schema (6 Tables)
 - ✅ **categories** - Product categorization
@@ -176,7 +176,7 @@ Visible on:
 **Backend:**
 - Node.js v14+
 - Express.js 4.x
-- SQLite3
+- PostgreSQL (pg)
 - CORS, dotenv, body-parser
 - UUID for order numbers
 
