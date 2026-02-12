@@ -84,6 +84,11 @@ router.post('/signup', async (req, res) => {
       [name, email, hashedPassword, phone || null, address || null]
     );
 
+    // Validate that we got an ID back from the database
+    if (!result.rows || !result.rows[0] || !result.rows[0].id) {
+      throw new Error('Failed to retrieve buyer ID from database');
+    }
+
     const buyerId = result.rows[0].id;
 
     // Link any existing guest orders to this buyer account
