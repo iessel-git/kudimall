@@ -81,6 +81,9 @@ const { router: buyerAuthRoutes } = require('./routes/buyerAuth');
 const buyerManagementRoutes = require('./routes/buyerManagement');
 const { router: deliveryAuthRoutes } = require('./routes/deliveryAuth');
 const deliveryManagementRoutes = require('./routes/deliveryManagement');
+const wishlistRoutes = require('./routes/wishlist');
+const cartRoutes = require('./routes/cart');
+const dealsRoutes = require('./routes/deals');
 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/sellers', sellerRoutes);
@@ -95,12 +98,15 @@ app.use('/api/buyer-auth', buyerAuthRoutes);
 app.use('/api/buyer', buyerManagementRoutes);
 app.use('/api/delivery-auth', deliveryAuthRoutes);
 app.use('/api/delivery', deliveryManagementRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/deals', dealsRoutes);
 
 // Root route - API information
 app.get('/', (req, res) => {
   res.json({
     name: 'KudiMall API',
-    version: '1.0.0',
+    version: '2.0.0',
     status: 'running',
     message: 'Welcome to KudiMall API',
     endpoints: {
@@ -117,7 +123,10 @@ app.get('/', (req, res) => {
       'buyer-auth': '/api/buyer-auth',
       'buyer-management': '/api/buyer',
       'delivery-auth': '/api/delivery-auth',
-      'delivery-management': '/api/delivery'
+      'delivery-management': '/api/delivery',
+      wishlist: '/api/wishlist',
+      cart: '/api/cart',
+      deals: '/api/deals'
     }
   });
 });

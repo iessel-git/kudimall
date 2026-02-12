@@ -1,23 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { getCartCount } from '../services/api';
 import '../styles/Header.css';
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [buyer, setBuyer] = useState(null);
+  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const fetchCartCount = useCallback(async () => {
+    const token = localStorage.getItem('buyer_token');
+    if (token) {
+      try {
+        const response = await getCartCount();
+        setCartCount(response.data.count || 0);
+      } catch (error) {
+        console.error('Error fetching cart count:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const buyerInfo = localStorage.getItem('buyer_info');
     if (buyerInfo) {
       try {
         setBuyer(JSON.parse(buyerInfo));
+        fetchCartCount();
       } catch (error) {
         console.error('Error parsing buyer info:', error);
       }
     }
-  }, []);
+  }, [fetchCartCount]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -72,7 +87,15 @@ const Header = () => {
               
               <nav className="header-nav">
                 <Link to="/" className="nav-link">Home</Link>
+                <Link to="/deals" className="nav-link deals-link">🔥 Deals</Link>
                 <Link to="/search?type=sellers" className="nav-link">Sellers</Link>
+                {buyer && (
+                  <Link to="/wishlist" className="nav-link wishlist-link">❤️</Link>
+                )}
+                <Link to="/cart" className="nav-link cart-link">
+                  🛒
+                  {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                </Link>
                 {buyer ? (
                   <Link to="/buyer/dashboard" className="nav-link buyer-account">
                     👤 {buyer.name}
@@ -80,7 +103,6 @@ const Header = () => {
                 ) : (
                   <Link to="/buyer/login" className="nav-link my-orders-link">My Orders</Link>
                 )}
-                <Link to="/delivery/login" className="nav-link">Delivery</Link>
                 <Link to="/seller/login" className="nav-link seller-login">Sell</Link>
               </nav>
             </div>
@@ -95,15 +117,23 @@ const Header = () => {
           <span className="mobile-nav-label">Home</span>
         </Link>
         
-        <Link to="/search?type=sellers" className={`mobile-nav-item ${location.search.includes('type=sellers') ? 'active' : ''}`}>
-          <span className="mobile-nav-icon">🏪</span>
-          <span className="mobile-nav-label">Sellers</span>
+        <Link to="/deals" className={`mobile-nav-item ${isActive('/deals') ? 'active' : ''}`}>
+          <span className="mobile-nav-icon">🔥</span>
+          <span className="mobile-nav-label">Deals</span>
+        </Link>
+        
+        <Link to="/cart" className={`mobile-nav-item cart-mobile ${isActive('/cart') ? 'active' : ''}`}>
+          <span className="mobile-nav-icon">
+            🛒
+            {cartCount > 0 && <span className="mobile-cart-badge">{cartCount}</span>}
+          </span>
+          <span className="mobile-nav-label">Cart</span>
         </Link>
         
         {buyer ? (
-          <Link to="/buyer/dashboard?view=orders" className={`mobile-nav-item ${location.pathname === '/buyer/dashboard' && location.search.includes('view=orders') ? 'active' : ''}`}>
-            <span className="mobile-nav-icon">📦</span>
-            <span className="mobile-nav-label">Orders</span>
+          <Link to="/wishlist" className={`mobile-nav-item ${isActive('/wishlist') ? 'active' : ''}`}>
+            <span className="mobile-nav-icon">❤️</span>
+            <span className="mobile-nav-label">Wishlist</span>
           </Link>
         ) : (
           <Link to="/buyer/login" className={`mobile-nav-item ${isActive('/buyer/login') ? 'active' : ''}`}>
@@ -113,7 +143,7 @@ const Header = () => {
         )}
         
         {buyer ? (
-          <Link to="/buyer/dashboard" className={`mobile-nav-item ${location.pathname === '/buyer/dashboard' && !location.search.includes('view=orders') ? 'active' : ''}`}>
+          <Link to="/buyer/dashboard" className={`mobile-nav-item ${location.pathname === '/buyer/dashboard' ? 'active' : ''}`}>
             <span className="mobile-nav-icon">👤</span>
             <span className="mobile-nav-label">Account</span>
           </Link>
@@ -123,11 +153,6 @@ const Header = () => {
             <span className="mobile-nav-label">Account</span>
           </Link>
         )}
-        
-        <Link to="/seller/login" className={`mobile-nav-item ${location.pathname.includes('/seller') ? 'active' : ''}`}>
-          <span className="mobile-nav-icon">💼</span>
-          <span className="mobile-nav-label">Sell</span>
-        </Link>
       </nav>
     </>
   );
