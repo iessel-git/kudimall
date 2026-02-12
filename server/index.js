@@ -267,13 +267,44 @@ app.listen(PORT, async () => {
   console.log(`🟢 KudiMall API Server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   
-  // Auto-seed database if empty (for free tier deployment)
+  // Auto-initialize database schema on startup
   try {
     const db = require('./models/database');
-
-    // Simple check - if any error occurs, decide whether to seed or skip
+    const initDb = require('./scripts/initDb');
+    
+    // Check if sellers table has email column
+    let needsMigration = false;
+    try {
+      const columns = await db.all(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'sellers' AND column_name = 'email'
+      `);
+      
+      if (!columns || columns.length === 0) {
+        console.log('⚠️  Sellers table missing email column, running migration...');
+        needsMigration = true;
+      }
+    } catch (error) {
+      // Table might not exist at all
+      if (error.message.includes('does not exist') || error.message.includes('no such table')) {
+        console.log('📦 Sellers table not found, initializing database...');
+        needsMigration = true;
+      }
+    }
+    
+    // Run migration if needed (this is safe to run multiple times)
+    if (needsMigration) {
+      console.log('🔧 Running database initialization...');
+      await initDb();
+      console.log('✅ Database schema initialized successfully');
+    } else {
+      console.log('✓ Database schema is up to date');
+    }
+    
+    // Auto-seed database if empty (for free tier deployment)
     const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
-
+    
     if (categories && categories[0] && categories[0].count === 0) {
       console.log('🌱 Database appears empty, auto-seeding...');
       const seedDb = require('./scripts/seedDb');
@@ -283,21 +314,8 @@ app.listen(PORT, async () => {
       console.log('📊 Database already contains data, skipping seed');
     }
   } catch (error) {
-    const message = error && error.message ? error.message : '';
-
-    if (message.includes('no such table')) {
-      console.log('📦 Database tables missing, initializing with seed data...');
-      try {
-        const seedDb = require('./scripts/seedDb');
-        await seedDb();
-        console.log('✅ Database initialized and seeded successfully');
-      } catch (seedError) {
-        console.log('❌ Auto-seed failed:', seedError.message);
-      }
-    } else {
-      console.log('ℹ️  Auto-seed skipped:', message);
-      console.log('💡 Use POST /api/seed-database to seed manually');
-    }
+    console.error('❌ Database initialization error:', error.message);
+    console.log('💡 Use POST /api/seed-database to seed manually or POST /api/debug/migrate to run migrations');
   }
 });
 
