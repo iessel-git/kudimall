@@ -89,7 +89,7 @@ router.post('/signup', async (req, res) => {
       throw new Error('Database insert failed: No rows returned');
     }
     if (!result.rows[0]) {
-      throw new Error('Database insert failed: Empty result set (rowCount: ' + result.rowCount + ')');
+      throw new Error(`Database insert failed: Empty result set (rowCount: ${result.rowCount})`);
     }
     if (!result.rows[0].id) {
       throw new Error('Database insert failed: No ID in result');
