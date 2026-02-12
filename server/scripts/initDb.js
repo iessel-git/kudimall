@@ -4,6 +4,8 @@ const db = require('../models/database');
 const initDb = async () => {
   try {
     console.log('🔧 Initializing KudiMall Database...');
+    
+    // Create base tables first
     await db.run(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -14,11 +16,17 @@ const initDb = async () => {
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+    
+    await db.run(`
       CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         description TEXT
       );
+    `);
+    
+    await db.run(`
       CREATE TABLE IF NOT EXISTS sellers (
         id SERIAL PRIMARY KEY,
         user_id INT REFERENCES users(id) ON DELETE CASCADE,
@@ -27,26 +35,54 @@ const initDb = async () => {
         is_verified BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      -- Add missing seller columns used by API routes
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS name VARCHAR(255);
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS location TEXT;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS description TEXT;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS logo_url TEXT;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS banner_url TEXT;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS trust_level INTEGER DEFAULT 0;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS password VARCHAR(255);
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2);
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+    `);
+    
+    // Add missing seller columns used by API routes - run these independently to ensure they execute
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS name VARCHAR(255);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS slug VARCHAR(255);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email VARCHAR(255);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS phone VARCHAR(50);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS location TEXT;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS description TEXT;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS logo_url TEXT;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS banner_url TEXT;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS trust_level INTEGER DEFAULT 0;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS password VARCHAR(255);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2);`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`);
+    
+    // Add unique constraints for slug and email if they don't exist
+    await db.run(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'sellers_slug_key'
+        ) THEN
+          ALTER TABLE sellers ADD CONSTRAINT sellers_slug_key UNIQUE (slug);
+        END IF;
+      END $$;
+    `);
+    
+    await db.run(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'sellers_email_key'
+        ) THEN
+          ALTER TABLE sellers ADD CONSTRAINT sellers_email_key UNIQUE (email);
+        END IF;
+      END $$;
+    `);
+    
+    // Continue with other tables
+    await db.run(`
       CREATE TABLE IF NOT EXISTS buyers (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -62,8 +98,12 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-      ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);
-      ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP;
+    `);
+    
+    await db.run(`ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);`);
+    await db.run(`ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP;`);
+    
+    await db.run(`
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
         seller_id INT REFERENCES sellers(id) ON DELETE CASCADE,
@@ -76,6 +116,9 @@ const initDb = async () => {
         is_available BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+    
+    await db.run(`
       CREATE TABLE IF NOT EXISTS carts (
         id SERIAL PRIMARY KEY,
         user_id INT REFERENCES users(id) ON DELETE CASCADE,
