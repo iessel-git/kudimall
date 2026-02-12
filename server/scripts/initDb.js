@@ -38,48 +38,67 @@ const initDb = async () => {
     `);
     
     // Add missing seller columns used by API routes - run these independently to ensure they execute
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS name VARCHAR(255);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS slug VARCHAR(255);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email VARCHAR(255);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS phone VARCHAR(50);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS location TEXT;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS description TEXT;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS logo_url TEXT;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS banner_url TEXT;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS trust_level INTEGER DEFAULT 0;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS password VARCHAR(255);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2);`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
-    await db.run(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`);
+    // Each column is wrapped in try-catch to ensure subsequent columns are added even if one fails
+    const sellersColumns = [
+      { name: 'name', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS name VARCHAR(255);' },
+      { name: 'slug', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS slug VARCHAR(255);' },
+      { name: 'email', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email VARCHAR(255);' },
+      { name: 'phone', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS phone VARCHAR(50);' },
+      { name: 'location', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS location TEXT;' },
+      { name: 'description', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS description TEXT;' },
+      { name: 'logo_url', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS logo_url TEXT;' },
+      { name: 'banner_url', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS banner_url TEXT;' },
+      { name: 'trust_level', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS trust_level INTEGER DEFAULT 0;' },
+      { name: 'password', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS password VARCHAR(255);' },
+      { name: 'email_verified', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;' },
+      { name: 'email_verification_token', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);' },
+      { name: 'email_verification_expires', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;' },
+      { name: 'last_login', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;' },
+      { name: 'total_sales', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0;' },
+      { name: 'rating', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2);' },
+      { name: 'review_count', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;' },
+      { name: 'updated_at', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;' },
+      { name: 'is_active', sql: 'ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;' }
+    ];
+    
+    for (const column of sellersColumns) {
+      try {
+        await db.run(column.sql);
+      } catch (error) {
+        console.error(`⚠️  Failed to add column ${column.name} to sellers table:`, error.message);
+      }
+    }
     
     // Add unique constraints for slug and email if they don't exist
-    await db.run(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'sellers_slug_key'
-        ) THEN
-          ALTER TABLE sellers ADD CONSTRAINT sellers_slug_key UNIQUE (slug);
-        END IF;
-      END $$;
-    `);
+    try {
+      await db.run(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'sellers_slug_key'
+          ) THEN
+            ALTER TABLE sellers ADD CONSTRAINT sellers_slug_key UNIQUE (slug);
+          END IF;
+        END $$;
+      `);
+    } catch (error) {
+      console.error('⚠️  Failed to add unique constraint to sellers.slug:', error.message);
+    }
     
-    await db.run(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint WHERE conname = 'sellers_email_key'
-        ) THEN
-          ALTER TABLE sellers ADD CONSTRAINT sellers_email_key UNIQUE (email);
-        END IF;
-      END $$;
-    `);
+    try {
+      await db.run(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint WHERE conname = 'sellers_email_key'
+          ) THEN
+            ALTER TABLE sellers ADD CONSTRAINT sellers_email_key UNIQUE (email);
+          END IF;
+        END $$;
+      `);
+    } catch (error) {
+      console.error('⚠️  Failed to add unique constraint to sellers.email:', error.message);
+    }
     
     // Continue with other tables
     await db.run(`

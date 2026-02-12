@@ -136,8 +136,16 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KudiMall API is running' });
 });
 
-// Database schema verification endpoint (for debugging)
+// Database schema verification endpoint (for debugging - restricted to development)
 app.get('/api/debug/schema', async (req, res) => {
+  // Only allow in development environment
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'This endpoint is only available in development mode'
+    });
+  }
+  
   try {
     const db = require('./models/database');
     
@@ -205,7 +213,7 @@ app.get('/api/debug/schema', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 });
@@ -222,8 +230,16 @@ app.post('/api/seed-database', async (req, res) => {
   }
 });
 
-// Manual migration endpoint (for fixing missing columns)
+// Manual migration endpoint (for fixing missing columns - restricted to development)
 app.post('/api/debug/migrate', async (req, res) => {
+  // Only allow in development environment
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      error: 'Forbidden',
+      message: 'This endpoint is only available in development mode'
+    });
+  }
+  
   try {
     const initDb = require('./scripts/initDb');
     await initDb();
@@ -236,7 +252,7 @@ app.post('/api/debug/migrate', async (req, res) => {
     res.status(500).json({ 
       status: 'error', 
       message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 });
