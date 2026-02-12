@@ -6,8 +6,8 @@ services:
     region: oregon
     plan: free
     buildCommand: cd server && npm install
-    # ⚠️ CRITICAL: Do NOT change this startCommand!
-    # ⚠️ Do NOT add psql commands or database migrations to startCommand
+    # ⚠️ CRITICAL: Do NOT change this `startCommand`!
+    # ⚠️ Do NOT add psql commands or database migrations to `startCommand`
     # The application auto-initializes the database on first startup via server/index.js
     # Database tables are created automatically using server/scripts/initDb.js
     # If you see "No such file or directory" errors, see RENDER_FIX_INSTRUCTIONS.md

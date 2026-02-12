@@ -92,15 +92,15 @@ The application (`server/index.js`) has built-in automatic database initializati
 
 ## Files Modified in This Fix
 
-```
-RENDER_FIX_INSTRUCTIONS.md    (NEW)   - Detailed fix guide
-QUICK_FIX.txt                 (NEW)   - Quick reference card
-README.md                     (UPDATED) - Added deployment notice
-render.yaml                   (UPDATED) - Enhanced warnings
-DEPLOYMENT.md                 (UPDATED) - Added fix reference
-RENDER_DEPLOYMENT_FIX.md     (UPDATED) - Added new guide links
-DEPLOYMENT_FIX_SUMMARY.md    (NEW)   - This file
-```
+| File | Status | Description |
+|------|--------|-------------|
+| RENDER_FIX_INSTRUCTIONS.md | NEW | Detailed fix guide |
+| QUICK_FIX.txt | NEW | Quick reference card |
+| DEPLOYMENT_FIX_SUMMARY.md | NEW | This file |
+| README.md | UPDATED | Added deployment notice |
+| render.yaml | UPDATED | Enhanced warnings |
+| DEPLOYMENT.md | UPDATED | Added fix reference |
+| RENDER_DEPLOYMENT_FIX.md | UPDATED | Added new guide links |
 
 ## Testing Performed
 
@@ -130,19 +130,19 @@ After deployment succeeds:
 
 1. **Health Check**
    ```bash
-   curl https://your-app-name.onrender.com/api/health
+   curl https://{your-app-name}.onrender.com/api/health
    ```
    Expected: `{"status":"ok","message":"KudiMall API is running"}`
 
 2. **Search Endpoint**
    ```bash
-   curl https://your-app-name.onrender.com/api/search?q=test
+   curl https://{your-app-name}.onrender.com/api/search?q=test
    ```
    Expected: JSON response with products, sellers, or categories
 
 3. **Categories Endpoint**
    ```bash
-   curl https://your-app-name.onrender.com/api/categories
+   curl https://{your-app-name}.onrender.com/api/categories
    ```
    Expected: Array of categories
 

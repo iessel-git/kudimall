@@ -40,7 +40,7 @@ Step 4: Verify Success
    ✅ "Database initialized and seeded successfully"
    
    → Test the API:
-   curl https://your-app-name.onrender.com/api/health
+   curl https://{your-app-name}.onrender.com/api/health
 
 
 WHY THIS WORKS:

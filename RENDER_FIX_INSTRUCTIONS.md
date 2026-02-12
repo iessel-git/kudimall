@@ -89,7 +89,7 @@ node scripts/seedDb.js
 - [ ] Save Changes
 - [ ] Wait for automatic deployment
 - [ ] Check logs for "Database initialized and seeded successfully"
-- [ ] Test the API: `curl https://your-app.onrender.com/api/health`
+- [ ] Test the API: `curl https://{your-app-name}.onrender.com/api/health`
 
 ## ❓ Still Having Issues?
 
