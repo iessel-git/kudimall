@@ -8,7 +8,8 @@ const DealsPage = () => {
   const [topDeals, setTopDeals] = useState([]);
   const [endingSoonDeals, setEndingSoonDeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  // Used to trigger re-renders for countdown updates
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     const fetchDeals = async () => {
@@ -32,10 +33,10 @@ const DealsPage = () => {
     fetchDeals();
   }, []);
 
-  // Update countdown timer every second
+  // Update countdown timer every second to trigger re-renders
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(Date.now());
+      setTick(t => t + 1);
     }, 1000);
 
     return () => clearInterval(timer);
