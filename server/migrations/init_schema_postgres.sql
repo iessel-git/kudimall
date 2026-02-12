@@ -19,6 +19,38 @@ CREATE TABLE IF NOT EXISTS sellers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- BUYERS
+CREATE TABLE IF NOT EXISTS buyers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    default_address TEXT,
+    city VARCHAR(100),
+    state VARCHAR(100),
+    zip_code VARCHAR(20),
+    is_active BOOLEAN DEFAULT TRUE,
+    reset_token VARCHAR(255),
+    reset_token_expiry TIMESTAMP,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- DELIVERY_USERS
+CREATE TABLE IF NOT EXISTS delivery_users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    is_active BOOLEAN DEFAULT TRUE,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- CATEGORIES
 CREATE TABLE IF NOT EXISTS categories (
     id SERIAL PRIMARY KEY,
@@ -138,6 +170,80 @@ CREATE TABLE IF NOT EXISTS payment_webhooks (
     error_message TEXT,
     processed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- REVIEWS
+CREATE TABLE IF NOT EXISTS reviews (
+    id SERIAL PRIMARY KEY,
+    product_id INT REFERENCES products(id) ON DELETE CASCADE,
+    seller_id INT REFERENCES sellers(id) ON DELETE CASCADE,
+    buyer_name VARCHAR(255) NOT NULL,
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- FOLLOWS
+CREATE TABLE IF NOT EXISTS follows (
+    id SERIAL PRIMARY KEY,
+    buyer_email VARCHAR(255) NOT NULL,
+    seller_id INT REFERENCES sellers(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(buyer_email, seller_id)
+);
+
+-- SELLER_APPLICATIONS
+CREATE TABLE IF NOT EXISTS seller_applications (
+    id SERIAL PRIMARY KEY,
+    application_id VARCHAR(100) UNIQUE NOT NULL,
+    
+    -- Personal Information
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    
+    -- Business Information
+    business_name VARCHAR(255) NOT NULL,
+    business_type VARCHAR(100) NOT NULL,
+    business_address TEXT NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(100) NOT NULL,
+    zip_code VARCHAR(20) NOT NULL,
+    country VARCHAR(100) NOT NULL,
+    tax_id VARCHAR(100),
+    
+    -- Store Information
+    store_name VARCHAR(255) NOT NULL,
+    store_description TEXT NOT NULL,
+    product_categories TEXT,
+    estimated_monthly_volume VARCHAR(50),
+    
+    -- Social Media
+    instagram_handle VARCHAR(255),
+    facebook_page VARCHAR(255),
+    twitter_handle VARCHAR(255),
+    tiktok_handle VARCHAR(255),
+    website_url TEXT,
+    
+    -- Banking Information
+    bank_name VARCHAR(255) NOT NULL,
+    account_holder_name VARCHAR(255) NOT NULL,
+    account_number_last4 VARCHAR(4) NOT NULL,
+    routing_number VARCHAR(50) NOT NULL,
+    
+    -- Verification
+    id_type VARCHAR(50) NOT NULL,
+    id_number VARCHAR(100) NOT NULL,
+    
+    -- Status and Admin fields
+    status VARCHAR(50) DEFAULT 'pending',
+    admin_notes TEXT,
+    reviewed_by VARCHAR(255),
+    reviewed_at TIMESTAMP,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- SEED DATA
