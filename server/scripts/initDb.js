@@ -128,7 +128,7 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       -- Add missing columns to orders table
-      ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(50) UNIQUE;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(50);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_id INTEGER REFERENCES buyers(id) ON DELETE SET NULL;
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_name VARCHAR(255);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255);
@@ -149,6 +149,15 @@ const initDb = async () => {
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_signature_uploaded_by VARCHAR(50);
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_person_id INTEGER;
       ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+      -- Add unique constraint to order_number if it doesn't exist
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'orders_order_number_key'
+        ) THEN
+          ALTER TABLE orders ADD CONSTRAINT orders_order_number_key UNIQUE (order_number);
+        END IF;
+      END $$;
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
         order_id INT REFERENCES orders(id) ON DELETE CASCADE,
