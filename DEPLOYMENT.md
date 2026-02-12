@@ -33,11 +33,22 @@ The `render.yaml` file in the root directory contains all the configuration need
    - `JWT_SECRET` (auto-generated)
    - `FRONTEND_URL=https://kudimall.onrender.com`
 
-4. **Initialize Database**
-   After first deployment, run migrations using Render Shell:
+4. **Database Initialization**
+   
+   **IMPORTANT:** The application automatically initializes the database on first startup!
+   
+   The server (via `server/index.js`) will:
+   - Auto-detect if database tables are missing
+   - Create all required tables automatically
+   - Seed initial data if database is empty
+   
+   **No manual migration commands are needed for initial deployment.**
+   
+   However, if you need to run migrations manually (for troubleshooting):
    ```bash
+   # Open Render Shell, then:
    cd server
-   PGPASSWORD='your_db_password' psql -U kudimall_user -d kudimall_prod -h your-db-host -f migrations/init_schema_postgres.sql
+   psql $DATABASE_URL -f migrations/init_schema_postgres.sql
    node scripts/seedDb.js
    ```
 
@@ -80,17 +91,37 @@ Set health check path: `/api/health`
 
 ### Database Setup
 
-#### Option 1: Using Render Shell
+**IMPORTANT: Automatic Initialization (Recommended)**
+
+The application automatically initializes the database on first startup. When you deploy:
+1. The server starts and detects if database tables exist
+2. If tables are missing, it automatically creates them via `server/scripts/initDb.js`
+3. If the database is empty, it automatically seeds initial data
+
+**You do NOT need to run manual psql commands for initial deployment.**
+
+#### Manual Initialization (Optional - Only if Automatic Fails)
+
+If automatic initialization fails or you need to manually initialize:
+
+##### Option 1: Using Render Shell
 1. Open Shell from Render dashboard
-2. Run migrations:
+2. Run migrations (only if automatic initialization failed):
 ```bash
 cd server
+# Create base schema
 psql $DATABASE_URL -f migrations/init_schema_postgres.sql
+
+# Add missing columns for API routes
 psql $DATABASE_URL -f migrations/add_missing_columns.sql
+
+# Seed initial data
 node scripts/seedDb.js
 ```
 
-#### Option 2: Using Local psql
+**Note:** The `add_missing_columns.sql` migration adds additional columns (like seller name, slug, email, location, description, etc.) that are used by various API routes but not included in the base schema.
+
+##### Option 2: Using Local psql
 1. Get connection string from Render dashboard
 2. Run from your local machine:
 ```bash

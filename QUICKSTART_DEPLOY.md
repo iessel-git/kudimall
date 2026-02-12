@@ -45,14 +45,13 @@ git push origin main
 #    - Connect GitHub repository
 #    - Render detects render.yaml automatically
 #    - Click "Create"
+#    - Wait for deployment to complete
+#    
+#    NOTE: Database initialization is AUTOMATIC!
+#    The application will auto-create tables and seed data on first startup.
+#    DO NOT run manual psql commands - they are not needed.
 
-# 3. Initialize database in Render Shell:
-cd server
-psql $DATABASE_URL -f migrations/init_schema_postgres.sql
-psql $DATABASE_URL -f migrations/add_missing_columns.sql
-node scripts/seedDb.js
-
-# 4. Test:
+# 3. Test:
 ./test-production.sh
 ```
 
