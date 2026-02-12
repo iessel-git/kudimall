@@ -28,10 +28,10 @@ router.get('/', async (req, res) => {
          FROM products p
          JOIN sellers s ON p.seller_id = s.id
          JOIN categories c ON p.category_id = c.id
-         WHERE (p.name LIKE ? OR p.description LIKE ?) 
-         AND p.is_available = 1
+         WHERE (p.name ILIKE $1 OR p.description ILIKE $2) 
+         AND p.is_available = TRUE
          ORDER BY p.is_featured DESC, p.views DESC
-         LIMIT ? OFFSET ?`,
+         LIMIT $3 OFFSET $4`,
         [searchTerm, searchTerm, parseInt(limit), offset]
       );
     }
@@ -40,9 +40,9 @@ router.get('/', async (req, res) => {
     if (type === 'all' || type === 'sellers') {
       results.sellers = await db.all(
         `SELECT * FROM sellers 
-         WHERE name LIKE ? OR description LIKE ?
+         WHERE name ILIKE $1 OR description ILIKE $2
          ORDER BY trust_level DESC, total_sales DESC
-         LIMIT ? OFFSET ?`,
+         LIMIT $3 OFFSET $4`,
         [searchTerm, searchTerm, parseInt(limit), offset]
       );
     }
@@ -51,8 +51,8 @@ router.get('/', async (req, res) => {
     if (type === 'all' || type === 'categories') {
       results.categories = await db.all(
         `SELECT * FROM categories 
-         WHERE name LIKE ? OR description LIKE ?
-         LIMIT ?`,
+         WHERE name ILIKE $1 OR description ILIKE $2
+         LIMIT $3`,
         [searchTerm, searchTerm, parseInt(limit)]
       );
     }
