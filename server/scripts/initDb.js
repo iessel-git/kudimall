@@ -27,6 +27,26 @@ const initDb = async () => {
         is_verified BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      -- Add missing seller columns used by API routes
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS location TEXT;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS description TEXT;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS logo_url TEXT;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS banner_url TEXT;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS trust_level INTEGER DEFAULT 0;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2);
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+      ALTER TABLE sellers ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
       CREATE TABLE IF NOT EXISTS buyers (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -42,6 +62,8 @@ const initDb = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255);
+      ALTER TABLE buyers ADD COLUMN IF NOT EXISTS reset_token_expiry TIMESTAMP;
       CREATE TABLE IF NOT EXISTS products (
         id SERIAL PRIMARY KEY,
         seller_id INT REFERENCES sellers(id) ON DELETE CASCADE,
@@ -162,7 +184,22 @@ const initDb = async () => {
         product_categories TEXT,
         estimated_monthly_volume VARCHAR(100),
         instagram_handle VARCHAR(100),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        facebook_page VARCHAR(255),
+        twitter_handle VARCHAR(255),
+        tiktok_handle VARCHAR(255),
+        website_url TEXT,
+        bank_name VARCHAR(255),
+        account_holder_name VARCHAR(255),
+        account_number_last4 VARCHAR(4),
+        routing_number VARCHAR(50),
+        id_type VARCHAR(50),
+        id_number VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'pending',
+        admin_notes TEXT,
+        reviewed_by VARCHAR(255),
+        reviewed_at TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
       CREATE TABLE IF NOT EXISTS inventory_alerts (
         id SERIAL PRIMARY KEY,
