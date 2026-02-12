@@ -41,7 +41,7 @@ router.post('/', optionalBuyerAuth, async (req, res) => {
     
     // Get product details
     const product = await db.get(
-      'SELECT * FROM products WHERE id = ?',
+      'SELECT * FROM products WHERE id = $1',
       [product_id]
     );
     
@@ -64,14 +64,14 @@ router.post('/', optionalBuyerAuth, async (req, res) => {
       `INSERT INTO orders 
        (order_number, buyer_id, buyer_name, buyer_email, buyer_phone, seller_id, 
         product_id, quantity, total_amount, delivery_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [order_number, buyer_id, buyer_name, buyer_email, buyer_phone, seller_id,
        product_id, quantity, total_amount, delivery_address]
     );
     
     // Update product stock
     await db.run(
-      'UPDATE products SET stock = stock - ?, sales = sales + ? WHERE id = ?',
+      'UPDATE products SET stock = stock - $1, sales = sales + $2 WHERE id = $3',
       [quantity, quantity, product_id]
     );
     
@@ -95,7 +95,7 @@ router.get('/:order_number', async (req, res) => {
        FROM orders o
        JOIN products p ON o.product_id = p.id
        JOIN sellers s ON o.seller_id = s.id
-       WHERE o.order_number = ?`,
+       WHERE o.order_number = $1`,
       [req.params.order_number]
     );
     

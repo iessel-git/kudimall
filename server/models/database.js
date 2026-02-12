@@ -1,12 +1,18 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  user: 'postgres',           // your PostgreSQL username
-  host: 'localhost',          // your PostgreSQL host
-  database: 'kudimall_dev',   // your PostgreSQL database name
-  password: '@Memba3nyinaa2$',               // your PostgreSQL password
-  port: 5432,                 // default PostgreSQL port
-});
+// Support both DATABASE_URL (production) and individual config (development)
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    })
+  : new Pool({
+      user: process.env.DB_USER || 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      database: process.env.DB_NAME || 'kudimall_dev',
+      password: process.env.DB_PASSWORD || '@Memba3nyinaa2$',
+      port: parseInt(process.env.DB_PORT || '5432'),
+    });
 
 class Database {
   async run(sql, params = []) {
