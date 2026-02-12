@@ -4,6 +4,8 @@ const db = require('../models/database');
 
 // ============================================================================
 // FLASH DEALS ROUTES
+// Note: These queries use PostgreSQL-specific functions (EXTRACT, EPOCH, NOW())
+// If using a different database, these functions may need to be adapted
 // ============================================================================
 
 // Get all active flash deals

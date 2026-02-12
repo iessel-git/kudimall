@@ -13,8 +13,10 @@ CREATE TABLE IF NOT EXISTS wishlists (
     buyer_email VARCHAR(255),
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(buyer_id, product_id),
-    UNIQUE(buyer_email, product_id)
+    -- Ensure at least one user identifier is provided
+    CONSTRAINT wishlists_user_check CHECK (buyer_id IS NOT NULL OR buyer_email IS NOT NULL),
+    -- Unique constraint per buyer_id and product
+    CONSTRAINT wishlists_buyer_product_unique UNIQUE (buyer_id, product_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_wishlists_buyer_id ON wishlists(buyer_id);
@@ -55,7 +57,11 @@ CREATE TABLE IF NOT EXISTS recently_viewed (
     buyer_email VARCHAR(255),
     session_id VARCHAR(255),
     product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Ensure at least one user identifier is provided
+    CONSTRAINT recently_viewed_user_check CHECK (
+        buyer_id IS NOT NULL OR buyer_email IS NOT NULL OR session_id IS NOT NULL
+    )
 );
 
 CREATE INDEX IF NOT EXISTS idx_recently_viewed_buyer_id ON recently_viewed(buyer_id);
