@@ -1,65 +1,31 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 
-const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '..', 'kudimall.db');
+const pool = new Pool({
+  user: 'postgres',           // your PostgreSQL username
+  host: 'localhost',          // your PostgreSQL host
+  database: 'kudimall_dev',   // your PostgreSQL database name
+  password: '@Memba3nyinaa2$',               // your PostgreSQL password
+  port: 5432,                 // default PostgreSQL port
+});
 
 class Database {
-  constructor() {
-    this.db = new sqlite3.Database(dbPath, (err) => {
-      if (err) {
-        console.error('Error connecting to database:', err);
-      } else {
-        console.log('Connected to SQLite database');
-      }
-    });
+  async run(sql, params = []) {
+    const result = await pool.query(sql, params);
+    return { rowCount: result.rowCount, rows: result.rows };
   }
 
-  run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ id: this.lastID, changes: this.changes });
-        }
-      });
-    });
+  async get(sql, params = []) {
+    const result = await pool.query(sql, params);
+    return result.rows[0] || null;
   }
 
-  get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
+  async all(sql, params = []) {
+    const result = await pool.query(sql, params);
+    return result.rows;
   }
 
-  all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    });
-  }
-
-  close() {
-    return new Promise((resolve, reject) => {
-      this.db.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+  async close() {
+    await pool.end();
   }
 }
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { sellerLogin } from '../services/api';
+import { API_BASE_URL, sellerLogin } from '../services/api';
 import '../styles/AuthPage.css';
 
 const SellerLoginPage = () => {
@@ -60,7 +60,7 @@ const SellerLoginPage = () => {
 
     setResendingEmail(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/seller/resend-verification', {
+      const response = await fetch(`${API_BASE_URL}/auth/seller/resend-verification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: formData.email })

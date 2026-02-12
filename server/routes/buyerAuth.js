@@ -8,6 +8,9 @@ const db = require('../models/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kudimall_buyer_secret_key_2024';
 const JWT_EXPIRY = '30d'; // 30 days for buyers
+const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
+  .split(',')[0]
+  .trim() || 'http://localhost:3000';
 
 // Email transporter configuration
 const createEmailTransporter = () => {
@@ -62,7 +65,7 @@ router.post('/signup', async (req, res) => {
 
     // Check if buyer already exists
     const existingBuyer = await db.get(
-      'SELECT id FROM buyers WHERE email = ?',
+      'SELECT id FROM buyers WHERE email = $1',
       [email]
     );
 
@@ -76,13 +79,13 @@ router.post('/signup', async (req, res) => {
     // Insert new buyer
     const result = await db.run(
       `INSERT INTO buyers (name, email, password, phone, default_address, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      VALUES ($1, $2, $3, $4, $5, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [name, email, hashedPassword, phone || null, address || null]
     );
 
     // Link any existing guest orders to this buyer account
     await db.run(
-      'UPDATE orders SET buyer_id = ? WHERE buyer_email = ? AND buyer_id IS NULL',
+      'UPDATE orders SET buyer_id = $1 WHERE buyer_email = $2 AND buyer_id IS NULL',
       [result.lastID, email]
     );
 
@@ -121,7 +124,7 @@ router.post('/login', async (req, res) => {
 
     // Find buyer
     const buyer = await db.get(
-      'SELECT * FROM buyers WHERE email = ?',
+      'SELECT * FROM buyers WHERE email = $1',
       [email]
     );
 
@@ -142,7 +145,7 @@ router.post('/login', async (req, res) => {
 
     // Update last login
     await db.run(
-      'UPDATE buyers SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE buyers SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
       [buyer.id]
     );
 
@@ -174,7 +177,7 @@ router.post('/login', async (req, res) => {
 router.get('/profile', authenticateBuyerToken, async (req, res) => {
   try {
     const buyer = await db.get(
-      'SELECT id, name, email, phone, default_address, city, state, zip_code, created_at FROM buyers WHERE id = ?',
+      'SELECT id, name, email, phone, default_address, city, state, zip_code, created_at FROM buyers WHERE id = $1',
       [req.buyer.id]
     );
 
@@ -189,7 +192,7 @@ router.get('/profile', authenticateBuyerToken, async (req, res) => {
         SUM(total_amount) as total_spent,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_orders,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders
-       FROM orders WHERE buyer_id = ?`,
+      FROM orders WHERE buyer_id = $1`,
       [req.buyer.id]
     );
 
@@ -210,8 +213,8 @@ router.put('/profile', authenticateBuyerToken, async (req, res) => {
 
     await db.run(
       `UPDATE buyers 
-       SET name = ?, phone = ?, default_address = ?, city = ?, state = ?, zip_code = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
+      SET name = $1, phone = $2, default_address = $3, city = $4, state = $5, zip_code = $6, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $7`,
       [name, phone, default_address, city, state, zip_code, req.buyer.id]
     );
 
@@ -233,7 +236,7 @@ router.post('/change-password', authenticateBuyerToken, async (req, res) => {
 
     // Get buyer with password
     const buyer = await db.get(
-      'SELECT password FROM buyers WHERE id = ?',
+      'SELECT password FROM buyers WHERE id = $1',
       [req.buyer.id]
     );
 
@@ -248,7 +251,7 @@ router.post('/change-password', authenticateBuyerToken, async (req, res) => {
 
     // Update password
     await db.run(
-      'UPDATE buyers SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE buyers SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [hashedPassword, req.buyer.id]
     );
 
@@ -270,7 +273,7 @@ router.post('/forgot-password', async (req, res) => {
 
     // Check if buyer exists
     const buyer = await db.get(
-      'SELECT id, name, email FROM buyers WHERE email = ?',
+      'SELECT id, name, email FROM buyers WHERE email = $1',
       [email]
     );
 
@@ -287,14 +290,14 @@ router.post('/forgot-password', async (req, res) => {
 
     // Save token to database
     await db.run(
-      'UPDATE buyers SET reset_token = ?, reset_token_expiry = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE buyers SET reset_token = $1, reset_token_expiry = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
       [resetToken, resetTokenExpiry, buyer.id]
     );
 
     // Send password reset email
     try {
       const transporter = createEmailTransporter();
-      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/buyer/reset-password?token=${resetToken}`;
+      const resetUrl = `${FRONTEND_BASE_URL}/buyer/reset-password?token=${resetToken}`;
       
       const mailOptions = {
         from: process.env.EMAIL_USER,
@@ -380,7 +383,7 @@ router.post('/reset-password', async (req, res) => {
     const buyer = await db.get(
       `SELECT id, email, name, reset_token_expiry 
        FROM buyers 
-       WHERE reset_token = ? AND reset_token_expiry > datetime('now')`,
+      WHERE reset_token = $1 AND reset_token_expiry > NOW()`,
       [token]
     );
 
@@ -394,8 +397,8 @@ router.post('/reset-password', async (req, res) => {
     // Update password and clear reset token
     await db.run(
       `UPDATE buyers 
-       SET password = ?, reset_token = NULL, reset_token_expiry = NULL, updated_at = CURRENT_TIMESTAMP 
-       WHERE id = ?`,
+      SET password = $1, reset_token = NULL, reset_token_expiry = NULL, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = $2`,
       [hashedPassword, buyer.id]
     );
 
@@ -432,7 +435,7 @@ router.post('/reset-password', async (req, res) => {
                 </div>
                 <p>You can now log in to your KudiMall account with your new password.</p>
                 <p style="text-align: center;">
-                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/buyer/login" class="button">Log In Now</a>
+                  <a href="${FRONTEND_BASE_URL}/buyer/login" class="button">Log In Now</a>
                 </p>
                 <p><strong>If you didn't make this change:</strong> Please contact our support team immediately to secure your account.</p>
               </div>

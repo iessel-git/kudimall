@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
       query += ' AND is_verified = 1 AND trust_level >= 4';
     }
     
-    query += ' ORDER BY trust_level DESC, total_sales DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY trust_level DESC, total_sales DESC LIMIT $1 OFFSET $2';
     params.push(parseInt(limit), offset);
     
     const sellers = await db.all(query, params);
@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
 router.get('/:slug', async (req, res) => {
   try {
     const seller = await db.get(
-      'SELECT * FROM sellers WHERE slug = ?',
+      'SELECT * FROM sellers WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -50,7 +50,7 @@ router.get('/:slug/products', async (req, res) => {
     const offset = (page - 1) * limit;
     
     const seller = await db.get(
-      'SELECT id FROM sellers WHERE slug = ?',
+      'SELECT id FROM sellers WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -62,9 +62,9 @@ router.get('/:slug/products', async (req, res) => {
       `SELECT p.*, c.name as category_name
        FROM products p
        JOIN categories c ON p.category_id = c.id
-       WHERE p.seller_id = ? AND p.is_available = 1
+      WHERE p.seller_id = $1 AND p.is_available = 1
        ORDER BY p.created_at DESC
-       LIMIT ? OFFSET ?`,
+      LIMIT $2 OFFSET $3`,
       [seller.id, parseInt(limit), offset]
     );
     
@@ -78,7 +78,7 @@ router.get('/:slug/products', async (req, res) => {
 router.get('/:slug/reviews', async (req, res) => {
   try {
     const seller = await db.get(
-      'SELECT id FROM sellers WHERE slug = ?',
+      'SELECT id FROM sellers WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -90,7 +90,7 @@ router.get('/:slug/reviews', async (req, res) => {
       `SELECT r.*, p.name as product_name
        FROM reviews r
        JOIN products p ON r.product_id = p.id
-       WHERE r.seller_id = ?
+      WHERE r.seller_id = $1
        ORDER BY r.created_at DESC`,
       [seller.id]
     );
@@ -111,7 +111,7 @@ router.post('/:slug/follow', async (req, res) => {
     }
     
     const seller = await db.get(
-      'SELECT id FROM sellers WHERE slug = ?',
+      'SELECT id FROM sellers WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -120,7 +120,7 @@ router.post('/:slug/follow', async (req, res) => {
     }
     
     await db.run(
-      'INSERT OR IGNORE INTO follows (buyer_email, seller_id) VALUES (?, ?)',
+      'INSERT INTO follows (buyer_email, seller_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
       [buyer_email, seller.id]
     );
     
@@ -140,7 +140,7 @@ router.delete('/:slug/follow', async (req, res) => {
     }
     
     const seller = await db.get(
-      'SELECT id FROM sellers WHERE slug = ?',
+      'SELECT id FROM sellers WHERE slug = $1',
       [req.params.slug]
     );
     
@@ -149,7 +149,7 @@ router.delete('/:slug/follow', async (req, res) => {
     }
     
     await db.run(
-      'DELETE FROM follows WHERE buyer_email = ? AND seller_id = ?',
+      'DELETE FROM follows WHERE buyer_email = $1 AND seller_id = $2',
       [buyer_email, seller.id]
     );
     

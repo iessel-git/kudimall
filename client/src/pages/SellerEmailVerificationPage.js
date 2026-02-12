@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/api';
 import '../styles/AuthPage.css';
 
 const SellerEmailVerificationPage = () => {
@@ -23,7 +24,7 @@ const SellerEmailVerificationPage = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/auth/seller/verify-email?token=${token}`
+          `${API_BASE_URL}/auth/seller/verify-email?token=${token}`
         );
         
         setStatus('success');
@@ -53,7 +54,7 @@ const SellerEmailVerificationPage = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/auth/seller/resend-verification',
+        `${API_BASE_URL}/auth/seller/resend-verification`,
         { email: resendEmail }
       );
       

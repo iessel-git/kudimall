@@ -7,6 +7,9 @@ const nodemailer = require('nodemailer');
 const db = require('../models/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'kudimall-secret-key-change-in-production';
+const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
+  .split(',')[0]
+  .trim() || 'http://localhost:3000';
 
 // Email transporter configuration
 const createEmailTransporter = () => {
@@ -37,7 +40,7 @@ const createEmailTransporter = () => {
 const sendVerificationEmail = async (email, name, token) => {
   try {
     const transporter = createEmailTransporter();
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/seller/verify-email?token=${token}`;
+    const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
     
     const mailOptions = {
       from: process.env.EMAIL_USER || 'noreply@kudimall.com',
@@ -146,7 +149,7 @@ router.post('/seller/signup', async (req, res) => {
 
     // Check if seller already exists
     const existingSeller = await db.get(
-      'SELECT * FROM sellers WHERE email = ?',
+      'SELECT * FROM sellers WHERE email = $1',
       [email]
     );
 
@@ -163,12 +166,12 @@ router.post('/seller/signup', async (req, res) => {
 
     // Generate unique slug
     let slug = generateSlug(name);
-    let slugExists = await db.get('SELECT id FROM sellers WHERE slug = ?', [slug]);
+    let slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
     let counter = 1;
     
     while (slugExists) {
       slug = `${generateSlug(name)}-${counter}`;
-      slugExists = await db.get('SELECT id FROM sellers WHERE slug = ?', [slug]);
+      slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
       counter++;
     }
 
@@ -181,7 +184,7 @@ router.post('/seller/signup', async (req, res) => {
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, is_active,
         email_verified, email_verification_token, email_verification_expires
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 0, $8, $9)
     `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, verificationToken, verificationExpires.toISOString()]);
 
     // Send verification email
@@ -228,7 +231,7 @@ router.post('/seller/login', async (req, res) => {
 
     // Find seller
     const seller = await db.get(
-      'SELECT * FROM sellers WHERE email = ?',
+      'SELECT * FROM sellers WHERE email = $1',
       [email]
     );
 
@@ -275,7 +278,7 @@ router.post('/seller/login', async (req, res) => {
 
     // Update last login
     await db.run(
-      'UPDATE sellers SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE sellers SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
       [seller.id]
     );
 
@@ -324,7 +327,7 @@ router.post('/seller/login', async (req, res) => {
 router.get('/seller/me', authenticateToken, async (req, res) => {
   try {
     const seller = await db.get(
-      'SELECT id, name, slug, email, phone, location, description, logo_url, banner_url, is_verified, trust_level, total_sales, rating, review_count, created_at FROM sellers WHERE id = ?',
+      'SELECT id, name, slug, email, phone, location, description, logo_url, banner_url, is_verified, trust_level, total_sales, rating, review_count, created_at FROM sellers WHERE id = $1',
       [req.seller.id]
     );
 
@@ -354,27 +357,27 @@ router.put('/seller/profile', authenticateToken, async (req, res) => {
     const params = [];
     
     if (name) {
-      updates.push('name = ?');
+      updates.push('name = $' + (updates.length + 1));
       params.push(name);
     }
     if (phone !== undefined) {
-      updates.push('phone = ?');
+      updates.push('phone = $' + (updates.length + 1));
       params.push(phone);
     }
     if (location !== undefined) {
-      updates.push('location = ?');
+      updates.push('location = $' + (updates.length + 1));
       params.push(location);
     }
     if (description !== undefined) {
-      updates.push('description = ?');
+      updates.push('description = $' + (updates.length + 1));
       params.push(description);
     }
     if (logo_url !== undefined) {
-      updates.push('logo_url = ?');
+      updates.push('logo_url = $' + (updates.length + 1));
       params.push(logo_url);
     }
     if (banner_url !== undefined) {
-      updates.push('banner_url = ?');
+      updates.push('banner_url = $' + (updates.length + 1));
       params.push(banner_url);
     }
     
@@ -382,12 +385,12 @@ router.put('/seller/profile', authenticateToken, async (req, res) => {
     params.push(req.seller.id);
     
     await db.run(
-      `UPDATE sellers SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE sellers SET ${updates.join(', ')} WHERE id = $${updates.length + 1}`,
       params
     );
     
     const updatedSeller = await db.get(
-      'SELECT id, name, slug, email, phone, location, description, logo_url, banner_url, is_verified, trust_level FROM sellers WHERE id = ?',
+      'SELECT id, name, slug, email, phone, location, description, logo_url, banner_url, is_verified, trust_level FROM sellers WHERE id = $1',
       [req.seller.id]
     );
     
@@ -419,7 +422,7 @@ router.get('/seller/verify-email', async (req, res) => {
 
     // Find seller by verification token
     const seller = await db.get(
-      'SELECT * FROM sellers WHERE email_verification_token = ?',
+      'SELECT * FROM sellers WHERE email_verification_token = $1',
       [token]
     );
 
@@ -458,7 +461,7 @@ router.get('/seller/verify-email', async (req, res) => {
            email_verification_token = NULL, 
            email_verification_expires = NULL,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
+      WHERE id = $1`,
       [seller.id]
     );
 
@@ -493,7 +496,7 @@ router.post('/seller/resend-verification', async (req, res) => {
 
     // Find seller
     const seller = await db.get(
-      'SELECT * FROM sellers WHERE email = ?',
+      'SELECT * FROM sellers WHERE email = $1',
       [email]
     );
 
@@ -520,10 +523,10 @@ router.post('/seller/resend-verification', async (req, res) => {
     // Update seller with new token
     await db.run(
       `UPDATE sellers 
-       SET email_verification_token = ?, 
-           email_verification_expires = ?,
+         SET email_verification_token = $1, 
+           email_verification_expires = $2,
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
+      WHERE id = $3`,
       [verificationToken, verificationExpires.toISOString(), seller.id]
     );
 

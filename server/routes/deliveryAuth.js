@@ -34,7 +34,7 @@ router.post('/signup', async (req, res) => {
     }
 
     const existingUser = await db.get(
-      'SELECT id FROM delivery_users WHERE email = ?',
+      'SELECT id FROM delivery_users WHERE email = $1',
       [email]
     );
 
@@ -46,7 +46,7 @@ router.post('/signup', async (req, res) => {
 
     const result = await db.run(
       `INSERT INTO delivery_users (name, email, password, phone, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      VALUES ($1, $2, $3, $4, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
       [name, email, hashedPassword, phone || null]
     );
 
@@ -82,7 +82,7 @@ router.post('/login', async (req, res) => {
     }
 
     const deliveryUser = await db.get(
-      'SELECT * FROM delivery_users WHERE email = ?',
+      'SELECT * FROM delivery_users WHERE email = $1',
       [email]
     );
 
@@ -100,7 +100,7 @@ router.post('/login', async (req, res) => {
     }
 
     await db.run(
-      'UPDATE delivery_users SET last_login = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE delivery_users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
       [deliveryUser.id]
     );
 
@@ -130,7 +130,7 @@ router.post('/login', async (req, res) => {
 router.get('/profile', authenticateDeliveryToken, async (req, res) => {
   try {
     const deliveryUser = await db.get(
-      'SELECT id, name, email, phone, created_at FROM delivery_users WHERE id = ?',
+      'SELECT id, name, email, phone, created_at FROM delivery_users WHERE id = $1',
       [req.deliveryUser.id]
     );
 

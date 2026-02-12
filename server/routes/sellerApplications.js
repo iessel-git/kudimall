@@ -246,7 +246,7 @@ router.post('/', async (req, res) => {
         instagram_handle, facebook_page, twitter_handle, tiktok_handle, website_url,
         bank_name, account_holder_name, account_number_last4, routing_number,
         id_type, id_number, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
     `, [
       applicationId,
       formData.firstName,

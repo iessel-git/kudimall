@@ -59,6 +59,7 @@ function App() {
             <Route path="/seller/login" element={<SellerLoginPage />} />
             <Route path="/seller/signup" element={<SellerSignupPage />} />
             <Route path="/seller/verify-email" element={<SellerEmailVerificationPage />} />
+            <Route path="/seller/verify" element={<SellerEmailVerificationPage />} />
             <Route path="/seller/dashboard" element={<SellerDashboard />} />
             <Route path="/buyer/login" element={<BuyerLoginPage />} />
             <Route path="/buyer/signup" element={<BuyerSignupPage />} />
