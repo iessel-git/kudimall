@@ -43,12 +43,12 @@ router.get('/orders', authenticateDeliveryToken, async (req, res) => {
       FROM orders o
       LEFT JOIN products p ON o.product_id = p.id
       LEFT JOIN sellers s ON o.seller_id = s.id
-      WHERE o.delivery_person_id = ?
+      WHERE o.delivery_person_id = $1
     `;
     const params = [req.deliveryUser.id];
 
     if (status) {
-      query += ' AND o.status = ?';
+      query += ' AND o.status = $2';
       params.push(status);
     }
 
@@ -67,7 +67,7 @@ router.get('/orders', authenticateDeliveryToken, async (req, res) => {
 router.post('/orders/:orderNumber/claim', authenticateDeliveryToken, async (req, res) => {
   try {
     const order = await db.get(
-      'SELECT * FROM orders WHERE order_number = ?',
+      'SELECT * FROM orders WHERE order_number = $1',
       [req.params.orderNumber]
     );
 
@@ -85,13 +85,13 @@ router.post('/orders/:orderNumber/claim', authenticateDeliveryToken, async (req,
 
     if (!order.delivery_person_id) {
       await db.run(
-        'UPDATE orders SET delivery_person_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        'UPDATE orders SET delivery_person_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
         [req.deliveryUser.id, order.id]
       );
     }
 
     const updatedOrder = await db.get(
-      'SELECT * FROM orders WHERE id = ?',
+      'SELECT * FROM orders WHERE id = $1',
       [order.id]
     );
 
@@ -106,7 +106,7 @@ router.post('/orders/:orderNumber/claim', authenticateDeliveryToken, async (req,
 router.post('/orders/:orderNumber/delivery-proof/photo', authenticateDeliveryToken, deliveryProofUpload.single('photo'), async (req, res) => {
   try {
     const order = await db.get(
-      'SELECT * FROM orders WHERE order_number = ?',
+      'SELECT * FROM orders WHERE order_number = $1',
       [req.params.orderNumber]
     );
 
@@ -131,18 +131,18 @@ router.post('/orders/:orderNumber/delivery-proof/photo', authenticateDeliveryTok
 
     await db.run(
       `UPDATE orders
-       SET delivery_person_id = COALESCE(delivery_person_id, ?),
-           delivery_proof_url = ?,
+       SET delivery_person_id = COALESCE(delivery_person_id, $1),
+           delivery_proof_url = $2,
            delivery_photo_uploaded_by = 'delivery',
-           delivery_proof_type = ?,
+           delivery_proof_type = $3,
            status = CASE WHEN status = 'completed' THEN status ELSE 'delivered' END,
            delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
+       WHERE id = $4`,
       [req.deliveryUser.id, proofUrl, proofType, order.id]
     );
 
-    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = ?', [order.id]);
+    const updatedOrder = await db.get('SELECT * FROM orders WHERE id = $1', [order.id]);
 
     res.json({
       success: true,
