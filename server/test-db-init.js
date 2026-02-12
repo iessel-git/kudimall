@@ -2,6 +2,8 @@
 /**
  * Test script to verify database initialization and sellers.email column exists
  * This simulates what happens during server startup
+ * 
+ * Note: This script requires PostgreSQL database
  */
 
 require('dotenv').config();

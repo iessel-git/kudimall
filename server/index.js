@@ -272,7 +272,7 @@ app.listen(PORT, async () => {
     const db = require('./models/database');
     const initDb = require('./scripts/initDb');
     
-    // Check if sellers table has email column
+    // Check if sellers table has email column (PostgreSQL-specific query)
     let needsMigration = false;
     try {
       const columns = await db.all(`

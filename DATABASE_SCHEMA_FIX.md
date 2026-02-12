@@ -8,6 +8,12 @@ When attempting to create a seller account, users encountered the error:
 
 This occurred because the database was initialized with the basic schema from `init_schema_postgres.sql` but the migration to add the `email` column to the sellers table (`add_missing_columns.sql`) was never applied.
 
+## Database Requirements
+**This application requires PostgreSQL.** The fix uses PostgreSQL-specific features:
+- `information_schema.columns` for column detection
+- `ADD COLUMN IF NOT EXISTS` syntax
+- `DO $$ ... END $$` blocks for conditional constraints
+
 ## Root Cause
 The original server startup logic only ran database initialization when:
 1. The database was completely empty (categories table empty), OR
