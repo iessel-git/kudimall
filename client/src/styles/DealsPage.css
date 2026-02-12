@@ -268,7 +268,7 @@ section {
   margin-bottom: 12px;
 }
 
-.progress-bar {
+.deal-progress .progress-bar {
   height: 8px;
   background: #eee;
   border-radius: 4px;
@@ -276,7 +276,7 @@ section {
   margin-bottom: 6px;
 }
 
-.progress-fill {
+.deal-progress .progress-fill {
   height: 100%;
   background: linear-gradient(90deg, #e74c3c, #ff6b6b);
   border-radius: 4px;

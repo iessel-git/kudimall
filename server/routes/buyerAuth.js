@@ -79,19 +79,22 @@ router.post('/signup', async (req, res) => {
     // Insert new buyer
     const result = await db.run(
       `INSERT INTO buyers (name, email, password, phone, default_address, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+      VALUES ($1, $2, $3, $4, $5, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING id`,
       [name, email, hashedPassword, phone || null, address || null]
     );
+
+    const buyerId = result.rows[0].id;
 
     // Link any existing guest orders to this buyer account
     await db.run(
       'UPDATE orders SET buyer_id = $1 WHERE buyer_email = $2 AND buyer_id IS NULL',
-      [result.lastID, email]
+      [buyerId, email]
     );
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: result.lastID, email, name },
+      { id: buyerId, email, name },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
@@ -100,7 +103,7 @@ router.post('/signup', async (req, res) => {
       message: 'Account created successfully',
       token,
       buyer: {
-        id: result.lastID,
+        id: buyerId,
         name,
         email,
         phone: phone || null,
