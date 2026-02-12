@@ -127,6 +127,37 @@ const initDb = async () => {
         cancelled_at TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      -- Add missing columns to orders table
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(50);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_id INTEGER REFERENCES buyers(id) ON DELETE SET NULL;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_name VARCHAR(255);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_email VARCHAR(255);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_phone VARCHAR(50);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_id INTEGER REFERENCES products(id) ON DELETE SET NULL;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC(10,2);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_address TEXT;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(255);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipped_at TIMESTAMP;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS buyer_confirmed_at TIMESTAMP;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_signature_name VARCHAR(255);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_signature_data TEXT;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_proof_type VARCHAR(50);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_proof_url TEXT;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_photo_uploaded_by VARCHAR(50);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_signature_uploaded_by VARCHAR(50);
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_person_id INTEGER;
+      ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+      -- Add unique constraint to order_number if it doesn't exist
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'orders_order_number_key'
+        ) THEN
+          ALTER TABLE orders ADD CONSTRAINT orders_order_number_key UNIQUE (order_number);
+        END IF;
+      END $$;
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
         order_id INT REFERENCES orders(id) ON DELETE CASCADE,
