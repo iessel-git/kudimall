@@ -17,7 +17,7 @@ router.post('/', async (req, res) => {
     
     const result = await db.run(
       `INSERT INTO reviews (product_id, seller_id, buyer_name, rating, comment)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [product_id, seller_id, buyer_name, rating, comment]
     );
     

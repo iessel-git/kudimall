@@ -111,7 +111,7 @@ router.post('/products', authenticateToken, async (req, res) => {
       INSERT INTO products (
         seller_id, category_id, name, slug, description, price, 
         stock, image_url, images, is_available, is_featured
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0)
       `, [
       req.seller.id,
       category_id,
