@@ -47,7 +47,7 @@ router.get('/products', authenticateToken, async (req, res) => {
       SELECT p.*, c.name as category_name, c.slug as category_slug
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.seller_id = ?
+      WHERE p.seller_id = $1
       ORDER BY p.created_at DESC
     `, [req.seller.id]);
 
@@ -92,7 +92,7 @@ router.post('/products', authenticateToken, async (req, res) => {
     // Generate unique slug
     let slug = generateSlug(name);
     let slugExists = await db.get(
-      'SELECT id FROM products WHERE slug = ? AND seller_id = ?',
+      'SELECT id FROM products WHERE slug = $1 AND seller_id = $2',
         [slug, req.seller.id]
     );
     let counter = 1;
@@ -100,7 +100,7 @@ router.post('/products', authenticateToken, async (req, res) => {
     while (slugExists) {
       slug = `${generateSlug(name)}-${counter}`;
       slugExists = await db.get(
-        'SELECT id FROM products WHERE slug = ? AND seller_id = ?',
+        'SELECT id FROM products WHERE slug = $1 AND seller_id = $2',
         [slug, req.seller.id]
       );
       counter++;
@@ -148,7 +148,7 @@ router.get('/products/:id', authenticateToken, async (req, res) => {
       SELECT p.*, c.name as category_name, c.slug as category_slug
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.id = ? AND p.seller_id = ?
+      WHERE p.id = $1 AND p.seller_id = $2
     `, [req.params.id, req.seller.id]);
 
     if (!product) {
@@ -181,7 +181,7 @@ router.put('/products/:id', authenticateToken, async (req, res) => {
 
     // Check if product exists and belongs to seller
     const existingProduct = await db.get(
-      'SELECT * FROM products WHERE id = ? AND seller_id = ?',
+      'SELECT * FROM products WHERE id = $1 AND seller_id = $2',
         [req.params.id, req.seller.id]
     );
 
@@ -194,7 +194,7 @@ router.put('/products/:id', authenticateToken, async (req, res) => {
 
     // Validate category if provided
     if (category_id) {
-      const category = await db.get('SELECT id FROM categories WHERE id = ?', [category_id]);
+      const category = await db.get('SELECT id FROM categories WHERE id = $1', [category_id]);
       if (!category) {
         return res.status(400).json({
           error: 'Invalid category',
@@ -207,35 +207,35 @@ router.put('/products/:id', authenticateToken, async (req, res) => {
     const params = [];
 
     if (name) {
-      updates.push('name = ?');
+      updates.push(`name = $${params.length + 1}`);
         params.push(name);
     }
     if (description !== undefined) {
-      updates.push('description = ?');
+      updates.push(`description = $${params.length + 1}`);
         params.push(description);
     }
     if (price !== undefined) {
-      updates.push('price = ?');
+      updates.push(`price = $${params.length + 1}`);
         params.push(price);
     }
     if (category_id !== undefined) {
-      updates.push('category_id = ?');
+      updates.push(`category_id = $${params.length + 1}`);
         params.push(category_id);
     }
     if (stock !== undefined) {
-      updates.push('stock = ?');
+      updates.push(`stock = $${params.length + 1}`);
         params.push(stock);
     }
     if (image_url !== undefined) {
-      updates.push('image_url = ?');
+      updates.push(`image_url = $${params.length + 1}`);
         params.push(image_url);
     }
     if (images !== undefined) {
-      updates.push('images = ?');
+      updates.push(`images = $${params.length + 1}`);
         params.push(JSON.stringify(images));
     }
     if (is_available !== undefined) {
-      updates.push('is_available = ?');
+      updates.push(`is_available = $${params.length + 1}`);
         params.push(is_available);
     }
 
@@ -244,12 +244,12 @@ router.put('/products/:id', authenticateToken, async (req, res) => {
     params.push(req.seller.id);
 
     await db.run(
-      `UPDATE products SET ${updates.join(', ')} WHERE id = ? AND seller_id = ?`,
+      `UPDATE products SET ${updates.join(', ')} WHERE id = $${params.length - 1} AND seller_id = $${params.length}`,
         params
     );
 
     const updatedProduct = await db.get(
-      'SELECT * FROM products WHERE id = ?',
+      'SELECT * FROM products WHERE id = $1',
         [req.params.id]
     );
 
@@ -272,7 +272,7 @@ router.delete('/products/:id', authenticateToken, async (req, res) => {
   try {
     // Check if product exists and belongs to seller
     const product = await db.get(
-      'SELECT * FROM products WHERE id = ? AND seller_id = ?',
+      'SELECT * FROM products WHERE id = $1 AND seller_id = $2',
       [req.params.id, req.seller.id]
     );
 
@@ -284,7 +284,7 @@ router.delete('/products/:id', authenticateToken, async (req, res) => {
     }
 
     await db.run(
-      'DELETE FROM products WHERE id = ? AND seller_id = ?',
+      'DELETE FROM products WHERE id = $1 AND seller_id = $2',
       [req.params.id, req.seller.id]
     );
 
@@ -312,13 +312,13 @@ router.get('/stats', authenticateToken, async (req, res) => {
         SUM(views) as total_views,
         SUM(sales) as total_sales
       FROM products
-      WHERE seller_id = ?
+      WHERE seller_id = $1
     `, [req.seller.id]);
 
     const recentOrders = await db.all(`
       SELECT COUNT(*) as count, status
       FROM orders
-      WHERE seller_id = ?
+      WHERE seller_id = $1
       GROUP BY status
     `, [req.seller.id]);
 
@@ -346,16 +346,16 @@ router.get('/orders', authenticateToken, async (req, res) => {
              p.image_url as product_image
       FROM orders o
       LEFT JOIN products p ON o.product_id = p.id
-      WHERE o.seller_id = ?
+      WHERE o.seller_id = $1
     `;
     const params = [req.seller.id];
 
     if (status) {
-      query += ' AND o.status = ?';
+      query += ' AND o.status = $2';
       params.push(status);
     }
 
-    query += ' ORDER BY o.created_at DESC LIMIT ?';
+    query += ` ORDER BY o.created_at DESC LIMIT $${params.length + 1}`;
     params.push(parseInt(limit));
 
     const orders = await db.all(query, params);
@@ -382,7 +382,7 @@ router.patch('/orders/:orderNumber/status', authenticateToken, async (req, res) 
 
     // Check if order belongs to seller
     const order = await db.get(
-      'SELECT * FROM orders WHERE order_number = ? AND seller_id = ?',
+      'SELECT * FROM orders WHERE order_number = $1 AND seller_id = $2',
         [req.params.orderNumber, req.seller.id]
     );
 
@@ -393,11 +393,11 @@ router.patch('/orders/:orderNumber/status', authenticateToken, async (req, res) 
       });
     }
 
-    const updates = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
+    const updates = [`status = $1`, 'updated_at = CURRENT_TIMESTAMP'];
     const params = [status];
 
     if (tracking_number) {
-      updates.push('tracking_number = ?');
+      updates.push(`tracking_number = $${params.length + 1}`);
         params.push(tracking_number);
     }
 
@@ -411,14 +411,13 @@ router.patch('/orders/:orderNumber/status', authenticateToken, async (req, res) 
 
     params.push(req.params.orderNumber);
 
-      `UPDATE orders SET ${updates.join(', ')} WHERE order_number = ?`,
     await db.run(
-      `UPDATE orders SET ${updates.join(', ')} WHERE order_number = $${updates.length + 1}`,
+      `UPDATE orders SET ${updates.join(', ')} WHERE order_number = $${params.length}`,
       params
     );
 
     const updatedOrder = await db.get(
-      'SELECT * FROM orders WHERE order_number = ?',
+      'SELECT * FROM orders WHERE order_number = $1',
         [req.params.orderNumber]
     );
 
@@ -441,7 +440,7 @@ router.post('/orders/:orderNumber/delivery-proof/photo', authenticateToken, deli
     }
 
     const order = await db.get(
-      'SELECT * FROM orders WHERE order_number = ? AND seller_id = ?',
+      'SELECT * FROM orders WHERE order_number = $1 AND seller_id = $2',
       [req.params.orderNumber, req.seller.id]
     );
 
@@ -456,14 +455,6 @@ router.post('/orders/:orderNumber/delivery-proof/photo', authenticateToken, deli
     const proofUrl = `/uploads/delivery-proofs/${req.file.filename}`;
     const proofType = order.delivery_signature_data ? 'photo+signature' : 'photo';
 
-      `UPDATE orders
-       SET status = 'delivered',
-           delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP),
-           delivery_proof_type = ?,
-           delivery_proof_url = ?,
-           delivery_photo_uploaded_by = ?,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
     await db.run(
       `UPDATE orders
        SET status = 'delivered',
@@ -477,7 +468,7 @@ router.post('/orders/:orderNumber/delivery-proof/photo', authenticateToken, deli
     );
 
     const updatedOrder = await db.get(
-      'SELECT * FROM orders WHERE id = ?',
+      'SELECT * FROM orders WHERE id = $1',
       [order.id]
     );
 
