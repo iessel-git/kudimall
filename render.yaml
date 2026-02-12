@@ -6,7 +6,7 @@ services:
     region: oregon
     plan: free
     buildCommand: cd server && npm install
-    startCommand: cd server && npm start
+    startCommand: cd server && psql $DATABASE_URL -f migrations/init_schema_postgres.sql && node index.js
     envVars:
       - key: NODE_ENV
         value: production
