@@ -136,6 +136,80 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KudiMall API is running' });
 });
 
+// Database schema verification endpoint (for debugging)
+app.get('/api/debug/schema', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // Check sellers table columns
+    const sellersColumns = await db.all(`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_name = 'sellers'
+      ORDER BY ordinal_position;
+    `);
+    
+    // Check if email column exists
+    const hasEmailColumn = sellersColumns.some(col => col.column_name === 'email');
+    
+    // Get table counts
+    const counts = {
+      sellers: 0,
+      buyers: 0,
+      products: 0,
+      categories: 0
+    };
+    
+    try {
+      const sellersCount = await db.get('SELECT COUNT(*) as count FROM sellers');
+      counts.sellers = sellersCount?.count || 0;
+    } catch (e) {
+      counts.sellers = 'error: ' + e.message;
+    }
+    
+    try {
+      const buyersCount = await db.get('SELECT COUNT(*) as count FROM buyers');
+      counts.buyers = buyersCount?.count || 0;
+    } catch (e) {
+      counts.buyers = 'error: ' + e.message;
+    }
+    
+    try {
+      const productsCount = await db.get('SELECT COUNT(*) as count FROM products');
+      counts.products = productsCount?.count || 0;
+    } catch (e) {
+      counts.products = 'error: ' + e.message;
+    }
+    
+    try {
+      const categoriesCount = await db.get('SELECT COUNT(*) as count FROM categories');
+      counts.categories = categoriesCount?.count || 0;
+    } catch (e) {
+      counts.categories = 'error: ' + e.message;
+    }
+    
+    res.json({
+      status: 'ok',
+      database: process.env.DATABASE_URL ? 'connected (DATABASE_URL)' : 'connected (local config)',
+      tables: {
+        sellers: {
+          hasEmailColumn,
+          columnsCount: sellersColumns.length,
+          columns: sellersColumns
+        }
+      },
+      counts
+    });
+  } catch (error) {
+    console.error('Schema check error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 // Manual seed endpoint (backup for auto-seed)
 app.post('/api/seed-database', async (req, res) => {
   try {
@@ -145,6 +219,25 @@ app.post('/api/seed-database', async (req, res) => {
   } catch (error) {
     console.error('Manual seed error:', error);
     res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
+// Manual migration endpoint (for fixing missing columns)
+app.post('/api/debug/migrate', async (req, res) => {
+  try {
+    const initDb = require('./scripts/initDb');
+    await initDb();
+    res.json({ 
+      status: 'success', 
+      message: 'Database migration completed successfully. All missing columns should now be added.' 
+    });
+  } catch (error) {
+    console.error('Manual migration error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
