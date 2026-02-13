@@ -192,12 +192,12 @@ router.post('/seller/signup', async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create seller with email_verified = 0
+    // Create seller with email_verified = FALSE
     const result = await db.run(`
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, is_active,
         email_verified, email_verification_token, email_verification_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 1, 0, $8, $9)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, FALSE, $8, $9)
     `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, verificationToken, verificationExpires.toISOString()]);
 
     // Send verification email
@@ -470,7 +470,7 @@ router.get('/seller/verify-email', async (req, res) => {
     // Verify the email
     await db.run(
       `UPDATE sellers 
-       SET email_verified = 1, 
+       SET email_verified = TRUE, 
            email_verification_token = NULL, 
            email_verification_expires = NULL,
            updated_at = CURRENT_TIMESTAMP
