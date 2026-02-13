@@ -20,6 +20,7 @@ const SellerSignupPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [autoVerified, setAutoVerified] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -49,8 +50,15 @@ const SellerSignupPage = () => {
       const { confirmPassword, ...signupData } = formData;
       const response = await sellerSignup(signupData);
 
+      // Check if account was auto-verified (email service not configured)
+      if (response.data.autoVerified) {
+        setSuccess(true);
+        setAutoVerified(true);
+        setSuccessMessage(response.data.message);
+        setUserEmail(signupData.email);
+      }
       // Check if email verification is required
-      if (response.data.emailVerificationRequired) {
+      else if (response.data.emailVerificationRequired) {
         setSuccess(true);
         setSuccessMessage(response.data.message);
         setEmailSent(response.data.emailSent !== false); // Default to true if not specified
@@ -82,19 +90,23 @@ const SellerSignupPage = () => {
 
           {success && (
             <div className="success-message" style={{
-              background: emailSent ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)',
-              border: emailSent ? '2px solid rgba(76, 175, 80, 0.5)' : '2px solid rgba(255, 152, 0, 0.5)',
-              color: emailSent ? '#4caf50' : '#f57c00',
+              background: (autoVerified || emailSent) ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+              border: (autoVerified || emailSent) ? '2px solid rgba(76, 175, 80, 0.5)' : '2px solid rgba(255, 152, 0, 0.5)',
+              color: (autoVerified || emailSent) ? '#4caf50' : '#f57c00',
               padding: '20px',
               borderRadius: '8px',
               marginBottom: '20px',
               textAlign: 'center'
             }}>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
-                {emailSent ? '✉️ Verification Email Sent!' : '⚠️ Account Created - Email Not Sent'}
+                {autoVerified ? '✅ Account Created & Verified!' : (emailSent ? '✉️ Verification Email Sent!' : '⚠️ Account Created - Email Not Sent')}
               </h3>
               <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>{successMessage}</p>
-              {emailSent ? (
+              {autoVerified ? (
+                <p style={{ fontSize: '0.9rem', color: '#66bb6a' }}>
+                  Your account is ready! You can now log in and start selling.
+                </p>
+              ) : emailSent ? (
                 <p style={{ fontSize: '0.9rem', color: '#66bb6a' }}>
                   Please check your email (including spam folder) and click the verification link to activate your account.
                 </p>

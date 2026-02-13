@@ -25,6 +25,15 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         value: https://kudimall.onrender.com
+      # Email Configuration - Configure these for seller verification emails
+      # Get Gmail App Password: https://myaccount.google.com/apppasswords
+      - key: EMAIL_USER
+        sync: false  # Set this in Render dashboard
+      - key: EMAIL_PASSWORD
+        sync: false  # Set this in Render dashboard
+      # Optional: Set to 'true' to auto-verify accounts when email is not configured
+      - key: SKIP_EMAIL_VERIFICATION
+        value: 'true'
     healthCheckPath: /api/health
     
   # PostgreSQL Database
