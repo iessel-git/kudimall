@@ -190,6 +190,28 @@ const generateSlug = (name) => {
     .replace(/^-+|-+$/g, '');
 };
 
+// Helper function to get exposable error information from email result
+// Returns filtered error info that's safe to expose to clients based on environment
+const getExposableErrorInfo = (emailResult) => {
+  if (!emailResult || emailResult.success) {
+    return { emailError: undefined, errorCode: undefined, errorDetails: undefined };
+  }
+  
+  // In production, don't expose any error details
+  if (process.env.NODE_ENV === 'production') {
+    return { emailError: undefined, errorCode: undefined, errorDetails: undefined };
+  }
+  
+  // In non-production environments, expose error message but filter sensitive codes
+  const exposableError = {
+    emailError: emailResult.error,
+    errorCode: EXPOSABLE_ERROR_CODES.includes(emailResult.code) ? emailResult.code : undefined,
+    errorDetails: emailResult.details
+  };
+  
+  return exposableError;
+};
+
 // POST /api/auth/seller/signup - Register new seller
 router.post('/seller/signup', async (req, res) => {
   try {
@@ -259,6 +281,7 @@ router.post('/seller/signup', async (req, res) => {
 
     // Send verification email
     const emailResult = await sendVerificationEmail(email, name, verificationToken);
+    const exposableErrorInfo = getExposableErrorInfo(emailResult);
 
     res.status(201).json({
       success: true,
@@ -267,7 +290,7 @@ router.post('/seller/signup', async (req, res) => {
         : 'Seller account created successfully, but the verification email could not be sent. Please use the "Resend Verification Email" option or contact support.',
       emailVerificationRequired: true,
       emailSent: emailResult.success,
-      emailError: emailResult.success ? undefined : emailResult.error,
+      ...exposableErrorInfo,
       seller: {
         id: result.id,
         name,
@@ -622,15 +645,13 @@ router.post('/seller/resend-verification', async (req, res) => {
         userMessage = 'Could not connect to email server. Please try again in a few moments.';
       }
       
+      // Get filtered error information safe to expose to clients
+      const exposableErrorInfo = getExposableErrorInfo(emailResult);
+      
       res.status(500).json({
         error: 'Email failed',
         message: userMessage,
-        // Only expose error codes in non-production environments, and only for non-sensitive errors
-        errorCode: process.env.NODE_ENV !== 'production' && EXPOSABLE_ERROR_CODES.includes(emailResult.code) 
-          ? emailResult.code 
-          : undefined,
-        // Provide detailed error information in non-production environments for debugging
-        errorDetails: process.env.NODE_ENV !== 'production' ? emailResult.details : undefined
+        ...exposableErrorInfo
       });
     }
   } catch (error) {
