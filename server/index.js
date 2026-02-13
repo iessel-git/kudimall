@@ -9,6 +9,9 @@ const serverEnvPath = path.join(__dirname, '.env');
 if (fs.existsSync(serverEnvPath)) {
   dotenv.config({ path: serverEnvPath });
 } else {
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('server/.env not found; falling back to default environment variables');
+  }
   dotenv.config();
 }
 
