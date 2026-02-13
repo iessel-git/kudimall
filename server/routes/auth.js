@@ -23,6 +23,9 @@ const CONFIG_ERROR_CODES = ['EMAIL_NOT_CONFIGURED', 'EMAIL_PLACEHOLDER_VALUES'];
 // Error codes that indicate authentication issues (grouped for easier maintenance)
 const AUTH_ERROR_CODES = ['EMAIL_AUTH_FAILED'];
 
+// Error codes that indicate connection issues (grouped for easier maintenance)
+const CONNECTION_ERROR_CODES = ['EMAIL_CONNECTION_FAILED'];
+
 // Email transporter configuration
 const createEmailTransporter = () => {
   // Check if using Gmail (simple configuration)
@@ -220,20 +223,21 @@ const getExposableErrorInfo = (emailResult) => {
 };
 
 // Helper function to get user-friendly error message based on error code
+// Returns messages WITHOUT trailing periods for easier concatenation
 const getUserFriendlyEmailErrorMessage = (emailResult) => {
   if (!emailResult || emailResult.success) {
     return null;
   }
   
   if (CONFIG_ERROR_CODES.includes(emailResult.code)) {
-    return 'Email service is not configured. Please contact support.';
+    return 'Email service is not configured. Please contact support';
   } else if (AUTH_ERROR_CODES.includes(emailResult.code)) {
-    return 'Email service authentication failed. Please contact support.';
-  } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
-    return 'Could not connect to email server. Please try again in a few moments.';
+    return 'Email service authentication failed. Please contact support';
+  } else if (CONNECTION_ERROR_CODES.includes(emailResult.code)) {
+    return 'Could not connect to email server. Please try again in a few moments';
   }
   
-  return 'Failed to send verification email. Please try again later.';
+  return 'Failed to send verification email. Please try again later';
 };
 
 // POST /api/auth/seller/signup - Register new seller
@@ -313,7 +317,7 @@ router.post('/seller/signup', async (req, res) => {
       responseMessage = 'Seller account created successfully! Please check your email to verify your account.';
     } else {
       const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
-      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail.replace(/\.$/, '')} - you can use the "Resend Verification Email" option.`;
+      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} - you can use the "Resend Verification Email" option.`;
     }
 
     res.status(201).json({
@@ -665,7 +669,7 @@ router.post('/seller/resend-verification', async (req, res) => {
         message: 'Verification email sent! Please check your inbox.'
       });
     } else {
-      // Get user-friendly error message
+      // Get user-friendly error message (without trailing period)
       const userMessage = getUserFriendlyEmailErrorMessage(emailResult);
       
       // Get filtered error information safe to expose to clients
@@ -673,7 +677,7 @@ router.post('/seller/resend-verification', async (req, res) => {
       
       res.status(500).json({
         error: 'Email failed',
-        message: userMessage,
+        message: `${userMessage}.`, // Add period for complete sentence
         ...exposableErrorInfo
       });
     }
