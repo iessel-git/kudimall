@@ -12,6 +12,7 @@ const SellerEmailVerificationPage = () => {
   const [message, setMessage] = useState('');
   const [resendEmail, setResendEmail] = useState(location.state?.email || '');
   const [resending, setResending] = useState(false);
+  const [emailPreFilled, setEmailPreFilled] = useState(!!location.state?.email);
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -21,7 +22,7 @@ const SellerEmailVerificationPage = () => {
         // If no token but email provided via navigation state, show resend form
         if (location.state?.email) {
           setStatus('expired');
-          setMessage('Please enter your email to receive a new verification link.');
+          setMessage('Your email address has been pre-filled below. Click the button to send a verification email.');
           return;
         }
         setStatus('error');
@@ -128,12 +129,12 @@ const SellerEmailVerificationPage = () => {
             {status === 'expired' && (
               <div className="verification-status expired">
                 <div className="warning-icon">⚠</div>
-                <h3>Verification Link Expired</h3>
+                <h3>{emailPreFilled ? 'Send Verification Email' : 'Verification Link Expired'}</h3>
                 <p>{message || 'Your verification link has expired. Please request a new one.'}</p>
                 
                 <form onSubmit={handleResendVerification} className="resend-form">
                   <div className="form-group">
-                    <label>Enter your email address</label>
+                    <label>{emailPreFilled ? 'Your email address' : 'Enter your email address'}</label>
                     <input
                       type="email"
                       value={resendEmail}
