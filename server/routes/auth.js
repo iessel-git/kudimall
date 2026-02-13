@@ -42,7 +42,11 @@ const sendVerificationEmail = async (email, name, token) => {
     // Check if email is properly configured
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
       console.warn('⚠️ Email not configured (EMAIL_USER or EMAIL_PASSWORD missing). Skipping verification email.');
-      return false;
+      return { 
+        success: false, 
+        error: 'Email service not configured',
+        code: 'EMAIL_NOT_CONFIGURED'
+      };
     }
 
     // Check if using default/placeholder values
@@ -54,7 +58,11 @@ const sendVerificationEmail = async (email, name, token) => {
     
     if (isPlaceholder) {
       console.warn('⚠️ Email configured with placeholder values. Please update EMAIL_USER and EMAIL_PASSWORD in .env file.');
-      return false;
+      return { 
+        success: false, 
+        error: 'Email service not configured properly',
+        code: 'EMAIL_PLACEHOLDER_VALUES'
+      };
     }
 
     const transporter = createEmailTransporter();
@@ -119,10 +127,31 @@ const sendVerificationEmail = async (email, name, token) => {
     
     await transporter.sendMail(mailOptions);
     console.log('✓ Verification email sent to:', email);
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Failed to send verification email:', error);
-    return false;
+    
+    // Determine error type for better error handling
+    let errorCode = 'EMAIL_SEND_FAILED';
+    let errorMessage = 'Failed to send email';
+    
+    if (error.code === 'EAUTH' || error.responseCode === 535) {
+      errorCode = 'EMAIL_AUTH_FAILED';
+      errorMessage = 'Email authentication failed';
+    } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      errorCode = 'EMAIL_CONNECTION_FAILED';
+      errorMessage = 'Could not connect to email server';
+    } else if (error.code === 'EMESSAGE') {
+      errorCode = 'EMAIL_INVALID';
+      errorMessage = 'Invalid email address or message';
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage,
+      code: errorCode,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    };
   }
 };
 
@@ -220,15 +249,16 @@ router.post('/seller/signup', async (req, res) => {
     `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, verificationToken, verificationExpires.toISOString()]);
 
     // Send verification email
-    const emailSent = await sendVerificationEmail(email, name, verificationToken);
+    const emailResult = await sendVerificationEmail(email, name, verificationToken);
 
     res.status(201).json({
       success: true,
-      message: emailSent 
+      message: emailResult.success 
         ? 'Seller account created successfully! Please check your email to verify your account.'
         : 'Seller account created successfully, but the verification email could not be sent. Please use the "Resend Verification Email" option or contact support.',
       emailVerificationRequired: true,
-      emailSent,
+      emailSent: emailResult.success,
+      emailError: emailResult.success ? undefined : emailResult.error,
       seller: {
         id: result.id,
         name,
@@ -564,17 +594,30 @@ router.post('/seller/resend-verification', async (req, res) => {
     );
 
     // Send verification email
-    const emailSent = await sendVerificationEmail(email, seller.name, verificationToken);
+    const emailResult = await sendVerificationEmail(email, seller.name, verificationToken);
 
-    if (emailSent) {
+    if (emailResult.success) {
       res.json({
         success: true,
         message: 'Verification email sent! Please check your inbox.'
       });
     } else {
+      // Provide more specific error message based on error code
+      let userMessage = 'Failed to send verification email. Please try again later.';
+      
+      if (emailResult.code === 'EMAIL_NOT_CONFIGURED' || emailResult.code === 'EMAIL_PLACEHOLDER_VALUES') {
+        userMessage = 'Email service is not configured. Please contact support.';
+      } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
+        userMessage = 'Email service authentication failed. Please contact support.';
+      } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
+        userMessage = 'Could not connect to email server. Please try again in a few moments.';
+      }
+      
       res.status(500).json({
         error: 'Email failed',
-        message: 'Failed to send verification email. Please try again later.'
+        message: userMessage,
+        errorCode: emailResult.code,
+        errorDetails: emailResult.details
       });
     }
   } catch (error) {
