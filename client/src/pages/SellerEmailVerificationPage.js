@@ -13,6 +13,8 @@ const SellerEmailVerificationPage = () => {
   const [resendEmail, setResendEmail] = useState(location.state?.email || '');
   const [resending, setResending] = useState(false);
   const [emailPreFilled, setEmailPreFilled] = useState(!!location.state?.email);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -59,6 +61,8 @@ const SellerEmailVerificationPage = () => {
   const handleResendVerification = async (e) => {
     e.preventDefault();
     setResending(true);
+    setResendSuccess(false);
+    setResendError('');
 
     try {
       const response = await axios.post(
@@ -66,10 +70,10 @@ const SellerEmailVerificationPage = () => {
         { email: resendEmail }
       );
       
-      alert(response.data.message);
-      setResendEmail('');
+      setResendSuccess(true);
+      // Don't clear the email field - keep it in case they need to try again
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to resend verification email');
+      setResendError(error.response?.data?.message || 'Failed to resend verification email');
     } finally {
       setResending(false);
     }
@@ -132,6 +136,37 @@ const SellerEmailVerificationPage = () => {
                 <h3>{emailPreFilled ? 'Send Verification Email' : 'Verification Link Expired'}</h3>
                 <p>{message || 'Your verification link has expired. Please request a new one.'}</p>
                 
+                {resendSuccess && (
+                  <div className="success-message" style={{
+                    background: 'rgba(76, 175, 80, 0.1)',
+                    border: '2px solid rgba(76, 175, 80, 0.5)',
+                    color: '#4caf50',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    marginBottom: '15px',
+                    textAlign: 'center'
+                  }}>
+                    <strong>✓ Verification email sent successfully!</strong>
+                    <p style={{ marginTop: '8px', fontSize: '0.9rem' }}>
+                      Please check your email inbox (and spam folder) for the verification link.
+                    </p>
+                  </div>
+                )}
+
+                {resendError && (
+                  <div className="error-message" style={{
+                    background: 'rgba(244, 67, 54, 0.1)',
+                    border: '2px solid rgba(244, 67, 54, 0.5)',
+                    color: '#f44336',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    marginBottom: '15px',
+                    textAlign: 'center'
+                  }}>
+                    <strong>✗ {resendError}</strong>
+                  </div>
+                )}
+
                 <form onSubmit={handleResendVerification} className="resend-form">
                   <div className="form-group">
                     <label>{emailPreFilled ? 'Your email address' : 'Enter your email address'}</label>
