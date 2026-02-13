@@ -148,16 +148,29 @@ router.post('/seller/signup', async (req, res) => {
     }
 
     // Check if seller already exists
-    const existingSeller = await db.get(
-      'SELECT * FROM sellers WHERE email = $1',
-      [email]
-    );
+    try {
+      const existingSeller = await db.get(
+        'SELECT * FROM sellers WHERE email = $1',
+        [email]
+      );
 
-    if (existingSeller) {
-      return res.status(409).json({ 
-        error: 'Email already exists',
-        message: 'A seller with this email already exists' 
-      });
+      if (existingSeller) {
+        return res.status(409).json({ 
+          error: 'Email already exists',
+          message: 'A seller with this email already exists' 
+        });
+      }
+    } catch (dbError) {
+      // Check if error is due to missing email column
+      if (dbError.message && dbError.message.includes('column') && dbError.message.includes('email')) {
+        console.error('❌ Database schema error: sellers table missing email column');
+        console.error('   Run: POST /api/debug/migrate (in development) or restart the server to auto-migrate');
+        return res.status(503).json({
+          error: 'Database configuration error',
+          message: 'The database schema needs to be updated. Please contact the administrator or restart the server to auto-migrate.'
+        });
+      }
+      throw dbError;
     }
 
     // Hash password
