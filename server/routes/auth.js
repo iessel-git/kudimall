@@ -604,11 +604,14 @@ router.post('/seller/resend-verification', async (req, res) => {
     } else {
       // Provide more specific error message based on error code
       let userMessage = 'Failed to send verification email. Please try again later.';
+      let shouldExposeCode = true;
       
       if (emailResult.code === 'EMAIL_NOT_CONFIGURED' || emailResult.code === 'EMAIL_PLACEHOLDER_VALUES') {
         userMessage = 'Email service is not configured. Please contact support.';
+        shouldExposeCode = false; // Don't expose configuration details to clients
       } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
         userMessage = 'Email service authentication failed. Please contact support.';
+        shouldExposeCode = false; // Don't expose authentication details to clients
       } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
         userMessage = 'Could not connect to email server. Please try again in a few moments.';
       }
@@ -616,8 +619,8 @@ router.post('/seller/resend-verification', async (req, res) => {
       res.status(500).json({
         error: 'Email failed',
         message: userMessage,
-        errorCode: emailResult.code,
-        errorDetails: emailResult.details
+        errorCode: (shouldExposeCode && process.env.NODE_ENV === 'development') ? emailResult.code : undefined,
+        errorDetails: process.env.NODE_ENV === 'development' ? emailResult.details : undefined
       });
     }
   } catch (error) {
