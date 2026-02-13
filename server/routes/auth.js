@@ -39,6 +39,24 @@ const createEmailTransporter = () => {
 // Helper function to send verification email
 const sendVerificationEmail = async (email, name, token) => {
   try {
+    // Check if email is properly configured
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      console.warn('⚠️ Email not configured (EMAIL_USER or EMAIL_PASSWORD missing). Skipping verification email.');
+      return false;
+    }
+
+    // Check if using default/placeholder values
+    const isPlaceholder = 
+      process.env.EMAIL_USER === 'your-email@gmail.com' ||
+      process.env.EMAIL_PASSWORD === 'your-app-password' ||
+      process.env.EMAIL_PASSWORD === 'your-password' ||
+      process.env.EMAIL_PASSWORD === 'your-16-character-app-password';
+    
+    if (isPlaceholder) {
+      console.warn('⚠️ Email configured with placeholder values. Please update EMAIL_USER and EMAIL_PASSWORD in .env file.');
+      return false;
+    }
+
     const transporter = createEmailTransporter();
     const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
     
@@ -208,8 +226,9 @@ router.post('/seller/signup', async (req, res) => {
       success: true,
       message: emailSent 
         ? 'Seller account created successfully! Please check your email to verify your account.'
-        : 'Seller account created successfully! Verification email could not be sent. Please contact support.',
+        : 'Seller account created successfully, but the verification email could not be sent. Please use the "Resend Verification Email" option or contact support.',
       emailVerificationRequired: true,
+      emailSent: emailSent,
       seller: {
         id: result.id,
         name,
