@@ -305,17 +305,17 @@ router.post('/seller/signup', async (req, res) => {
     const exposableErrorInfo = getExposableErrorInfo(emailResult);
 
     // Construct appropriate message based on email result
-    let statusMessage;
+    let responseMessage;
     if (emailResult.success) {
-      statusMessage = 'Seller account created successfully! Please check your email to verify your account.';
+      responseMessage = 'Seller account created successfully! Please check your email to verify your account.';
     } else {
       const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
-      statusMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} You can use the "Resend Verification Email" option.`;
+      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} You can use the "Resend Verification Email" option.`;
     }
 
     res.status(201).json({
       success: true,
-      message: statusMessage,
+      message: responseMessage,
       emailVerificationRequired: true,
       emailSent: emailResult.success,
       ...exposableErrorInfo,
