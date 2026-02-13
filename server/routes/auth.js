@@ -193,12 +193,13 @@ router.post('/seller/signup', async (req, res) => {
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Create seller with email_verified = FALSE
+    // Note: shop_name defaults to seller's name
     const result = await db.run(`
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, shop_name, is_active,
         email_verified, email_verification_token, email_verification_expires
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)
-    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name, verificationToken, verificationExpires.toISOString()]);
+    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, verificationToken, verificationExpires.toISOString()]);
 
     // Send verification email
     const emailSent = await sendVerificationEmail(email, name, verificationToken);
