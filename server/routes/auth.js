@@ -228,7 +228,7 @@ router.post('/seller/signup', async (req, res) => {
         ? 'Seller account created successfully! Please check your email to verify your account.'
         : 'Seller account created successfully, but the verification email could not be sent. Please use the "Resend Verification Email" option or contact support.',
       emailVerificationRequired: true,
-      emailSent: emailSent,
+      emailSent,
       seller: {
         id: result.id,
         name,
