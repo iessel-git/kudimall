@@ -202,14 +202,35 @@ const getExposableErrorInfo = (emailResult) => {
     return { emailError: undefined, errorCode: undefined, errorDetails: undefined };
   }
   
-  // In non-production environments, expose error message but filter sensitive codes
+  // In non-production environments, filter based on error code sensitivity
+  const isExposableCode = EXPOSABLE_ERROR_CODES.includes(emailResult.code);
+  
+  // Only expose error information if the error code is safe to expose
+  // This maintains consistency: if we don't expose the code, we don't expose details either
   const exposableError = {
-    emailError: emailResult.error,
-    errorCode: EXPOSABLE_ERROR_CODES.includes(emailResult.code) ? emailResult.code : undefined,
-    errorDetails: emailResult.details
+    emailError: isExposableCode ? emailResult.error : undefined,
+    errorCode: isExposableCode ? emailResult.code : undefined,
+    errorDetails: isExposableCode ? emailResult.details : undefined
   };
   
   return exposableError;
+};
+
+// Helper function to get user-friendly error message based on error code
+const getUserFriendlyEmailErrorMessage = (emailResult) => {
+  if (!emailResult || emailResult.success) {
+    return null;
+  }
+  
+  if (CONFIG_ERROR_CODES.includes(emailResult.code)) {
+    return 'Email service is not configured. Please contact support.';
+  } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
+    return 'Email service authentication failed. Please contact support.';
+  } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
+    return 'Could not connect to email server. Please try again in a few moments.';
+  }
+  
+  return 'Failed to send verification email. Please try again later.';
 };
 
 // POST /api/auth/seller/signup - Register new seller
@@ -283,11 +304,18 @@ router.post('/seller/signup', async (req, res) => {
     const emailResult = await sendVerificationEmail(email, name, verificationToken);
     const exposableErrorInfo = getExposableErrorInfo(emailResult);
 
+    // Construct appropriate message based on email result
+    let statusMessage;
+    if (emailResult.success) {
+      statusMessage = 'Seller account created successfully! Please check your email to verify your account.';
+    } else {
+      const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
+      statusMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} You can use the "Resend Verification Email" option.`;
+    }
+
     res.status(201).json({
       success: true,
-      message: emailResult.success 
-        ? 'Seller account created successfully! Please check your email to verify your account.'
-        : 'Seller account created successfully, but the verification email could not be sent. Please use the "Resend Verification Email" option or contact support.',
+      message: statusMessage,
       emailVerificationRequired: true,
       emailSent: emailResult.success,
       ...exposableErrorInfo,
@@ -634,16 +662,8 @@ router.post('/seller/resend-verification', async (req, res) => {
         message: 'Verification email sent! Please check your inbox.'
       });
     } else {
-      // Provide more specific error message based on error code
-      let userMessage = 'Failed to send verification email. Please try again later.';
-      
-      if (CONFIG_ERROR_CODES.includes(emailResult.code)) {
-        userMessage = 'Email service is not configured. Please contact support.';
-      } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
-        userMessage = 'Email service authentication failed. Please contact support.';
-      } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
-        userMessage = 'Could not connect to email server. Please try again in a few moments.';
-      }
+      // Get user-friendly error message
+      const userMessage = getUserFriendlyEmailErrorMessage(emailResult);
       
       // Get filtered error information safe to expose to clients
       const exposableErrorInfo = getExposableErrorInfo(emailResult);
