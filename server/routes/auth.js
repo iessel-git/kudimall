@@ -11,6 +11,21 @@ const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')[0]
   .trim() || 'http://localhost:3000';
 
+// Error codes that are safe to expose to clients (don't reveal system configuration)
+// Configuration errors (EMAIL_NOT_CONFIGURED, EMAIL_PLACEHOLDER_VALUES) and 
+// authentication errors (EMAIL_AUTH_FAILED) are excluded because they reveal
+// details about the server's email setup and credentials, which could aid attackers.
+const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
+
+// Error codes that indicate configuration issues (grouped for easier maintenance)
+const CONFIG_ERROR_CODES = ['EMAIL_NOT_CONFIGURED', 'EMAIL_PLACEHOLDER_VALUES'];
+
+// Error codes that indicate authentication issues (grouped for easier maintenance)
+const AUTH_ERROR_CODES = ['EMAIL_AUTH_FAILED'];
+
+// Error codes that indicate connection issues (grouped for easier maintenance)
+const CONNECTION_ERROR_CODES = ['EMAIL_CONNECTION_FAILED'];
+
 // Email transporter configuration
 const createEmailTransporter = () => {
   // Check if using Gmail (simple configuration)
@@ -42,7 +57,11 @@ const sendVerificationEmail = async (email, name, token) => {
     // Check if email is properly configured
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
       console.warn('⚠️ Email not configured (EMAIL_USER or EMAIL_PASSWORD missing). Skipping verification email.');
-      return false;
+      return { 
+        success: false, 
+        error: 'Email service not configured',
+        code: 'EMAIL_NOT_CONFIGURED'
+      };
     }
 
     // Check if using default/placeholder values
@@ -54,7 +73,11 @@ const sendVerificationEmail = async (email, name, token) => {
     
     if (isPlaceholder) {
       console.warn('⚠️ Email configured with placeholder values. Please update EMAIL_USER and EMAIL_PASSWORD in .env file.');
-      return false;
+      return { 
+        success: false, 
+        error: 'Email service not configured properly',
+        code: 'EMAIL_PLACEHOLDER_VALUES'
+      };
     }
 
     const transporter = createEmailTransporter();
@@ -119,10 +142,31 @@ const sendVerificationEmail = async (email, name, token) => {
     
     await transporter.sendMail(mailOptions);
     console.log('✓ Verification email sent to:', email);
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Failed to send verification email:', error);
-    return false;
+    
+    // Determine error type for better error handling
+    let errorCode = 'EMAIL_SEND_FAILED';
+    let errorMessage = 'Failed to send email';
+    
+    if (error.code === 'EAUTH' || error.responseCode === 535) {
+      errorCode = 'EMAIL_AUTH_FAILED';
+      errorMessage = 'Email authentication failed';
+    } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      errorCode = 'EMAIL_CONNECTION_FAILED';
+      errorMessage = 'Could not connect to email server';
+    } else if (error.code === 'EMESSAGE') {
+      errorCode = 'EMAIL_INVALID';
+      errorMessage = 'Invalid email address or message';
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage,
+      code: errorCode,
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+    };
   }
 };
 
@@ -150,6 +194,50 @@ const generateSlug = (name) => {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+};
+
+// Helper function to get exposable error information from email result
+// Returns filtered error info that's safe to expose to clients based on environment
+const getExposableErrorInfo = (emailResult) => {
+  if (!emailResult || emailResult.success) {
+    return { emailError: undefined, errorCode: undefined, errorDetails: undefined };
+  }
+  
+  // In production, don't expose any error details
+  if (process.env.NODE_ENV === 'production') {
+    return { emailError: undefined, errorCode: undefined, errorDetails: undefined };
+  }
+  
+  // In non-production environments, filter based on error code sensitivity
+  const isExposableCode = EXPOSABLE_ERROR_CODES.includes(emailResult.code);
+  
+  // Only expose error information if the error code is safe to expose
+  // This maintains consistency: if we don't expose the code, we don't expose details either
+  const exposableError = {
+    emailError: isExposableCode ? emailResult.error : undefined,
+    errorCode: isExposableCode ? emailResult.code : undefined,
+    errorDetails: isExposableCode ? emailResult.details : undefined
+  };
+  
+  return exposableError;
+};
+
+// Helper function to get user-friendly error message based on error code
+// Returns messages WITHOUT trailing periods for easier concatenation
+const getUserFriendlyEmailErrorMessage = (emailResult) => {
+  if (!emailResult || emailResult.success) {
+    return null;
+  }
+  
+  if (CONFIG_ERROR_CODES.includes(emailResult.code)) {
+    return 'Email service is not configured. Please contact support';
+  } else if (AUTH_ERROR_CODES.includes(emailResult.code)) {
+    return 'Email service authentication failed. Please contact support';
+  } else if (CONNECTION_ERROR_CODES.includes(emailResult.code)) {
+    return 'Could not connect to email server. Please try again in a few moments';
+  }
+  
+  return 'Failed to send verification email. Please try again later';
 };
 
 // POST /api/auth/seller/signup - Register new seller
@@ -220,15 +308,24 @@ router.post('/seller/signup', async (req, res) => {
     `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, verificationToken, verificationExpires.toISOString()]);
 
     // Send verification email
-    const emailSent = await sendVerificationEmail(email, name, verificationToken);
+    const emailResult = await sendVerificationEmail(email, name, verificationToken);
+    const exposableErrorInfo = getExposableErrorInfo(emailResult);
+
+    // Construct appropriate message based on email result
+    let responseMessage;
+    if (emailResult.success) {
+      responseMessage = 'Seller account created successfully! Please check your email to verify your account.';
+    } else {
+      const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
+      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} - you can use the "Resend Verification Email" option.`;
+    }
 
     res.status(201).json({
       success: true,
-      message: emailSent 
-        ? 'Seller account created successfully! Please check your email to verify your account.'
-        : 'Seller account created successfully, but the verification email could not be sent. Please use the "Resend Verification Email" option or contact support.',
+      message: responseMessage,
       emailVerificationRequired: true,
-      emailSent,
+      emailSent: emailResult.success,
+      ...exposableErrorInfo,
       seller: {
         id: result.id,
         name,
@@ -564,17 +661,24 @@ router.post('/seller/resend-verification', async (req, res) => {
     );
 
     // Send verification email
-    const emailSent = await sendVerificationEmail(email, seller.name, verificationToken);
+    const emailResult = await sendVerificationEmail(email, seller.name, verificationToken);
 
-    if (emailSent) {
+    if (emailResult.success) {
       res.json({
         success: true,
         message: 'Verification email sent! Please check your inbox.'
       });
     } else {
+      // Get user-friendly error message (without trailing period)
+      const userMessage = getUserFriendlyEmailErrorMessage(emailResult);
+      
+      // Get filtered error information safe to expose to clients
+      const exposableErrorInfo = getExposableErrorInfo(emailResult);
+      
       res.status(500).json({
         error: 'Email failed',
-        message: 'Failed to send verification email. Please try again later.'
+        message: `${userMessage}.`, // Add period for complete sentence
+        ...exposableErrorInfo
       });
     }
   } catch (error) {
