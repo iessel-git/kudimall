@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../services/api';
 import '../styles/AuthPage.css';
@@ -7,9 +7,10 @@ import '../styles/AuthPage.css';
 const SellerEmailVerificationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [status, setStatus] = useState('verifying'); // verifying, success, error, expired
   const [message, setMessage] = useState('');
-  const [resendEmail, setResendEmail] = useState('');
+  const [resendEmail, setResendEmail] = useState(location.state?.email || '');
   const [resending, setResending] = useState(false);
 
   useEffect(() => {
@@ -17,6 +18,12 @@ const SellerEmailVerificationPage = () => {
       const token = searchParams.get('token');
       
       if (!token) {
+        // If no token but email provided via navigation state, show resend form
+        if (location.state?.email) {
+          setStatus('expired');
+          setMessage('Please enter your email to receive a new verification link.');
+          return;
+        }
         setStatus('error');
         setMessage('Invalid verification link. Please check your email and try again.');
         return;
@@ -46,7 +53,7 @@ const SellerEmailVerificationPage = () => {
     };
 
     verifyEmail();
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, location.state]);
 
   const handleResendVerification = async (e) => {
     e.preventDefault();

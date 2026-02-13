@@ -28,6 +28,60 @@ const createTransporter = () => {
   });
 };
 
+// GET /api/seller-applications/info - Get information about seller applications API
+router.get('/info', (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const baseUrl = frontendUrl.split(',')[0].trim();
+  
+  res.json({
+    name: 'Seller Applications API',
+    description: 'Manage seller applications for KudiMall marketplace',
+    endpoints: {
+      create: {
+        method: 'POST',
+        path: '/api/seller-applications',
+        description: 'Submit a new seller application'
+      },
+      list: {
+        method: 'GET',
+        path: '/api/seller-applications',
+        description: 'Get all seller applications (admin only)',
+        queryParams: {
+          status: 'Filter by status (pending, reviewing, approved, rejected)',
+          limit: 'Number of results per page',
+          offset: 'Pagination offset'
+        }
+      },
+      get: {
+        method: 'GET',
+        path: '/api/seller-applications/:id',
+        description: 'Get a single application by ID or application_id'
+      },
+      update: {
+        method: 'PATCH',
+        path: '/api/seller-applications/:id',
+        description: 'Update application status (admin only)',
+        body: {
+          status: 'New status (pending, reviewing, approved, rejected)',
+          admin_notes: 'Admin notes about the application',
+          reviewed_by: 'Name of admin who reviewed'
+        }
+      }
+    },
+    adminInterface: {
+      url: `${baseUrl}/admin/applications`,
+      description: 'Web interface for managing seller applications',
+      features: [
+        'View all applications',
+        'Filter by status',
+        'View detailed application information',
+        'Approve or reject applications',
+        'Add admin notes'
+      ]
+    }
+  });
+});
+
 // POST /api/seller-applications - Create new seller application
 router.post('/', async (req, res) => {
   try {

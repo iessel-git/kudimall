@@ -18,6 +18,8 @@ const SellerSignupPage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -51,6 +53,8 @@ const SellerSignupPage = () => {
       if (response.data.emailVerificationRequired) {
         setSuccess(true);
         setSuccessMessage(response.data.message);
+        setEmailSent(response.data.emailSent !== false); // Default to true if not specified
+        setUserEmail(signupData.email);
       } else {
         // Old flow (if email verification is disabled)
         const { token, seller } = response.data;
@@ -78,19 +82,37 @@ const SellerSignupPage = () => {
 
           {success && (
             <div className="success-message" style={{
-              background: 'rgba(76, 175, 80, 0.1)',
-              border: '2px solid rgba(76, 175, 80, 0.5)',
-              color: '#4caf50',
+              background: emailSent ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+              border: emailSent ? '2px solid rgba(76, 175, 80, 0.5)' : '2px solid rgba(255, 152, 0, 0.5)',
+              color: emailSent ? '#4caf50' : '#f57c00',
               padding: '20px',
               borderRadius: '8px',
               marginBottom: '20px',
               textAlign: 'center'
             }}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>✉️ Verification Email Sent!</h3>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
+                {emailSent ? '✉️ Verification Email Sent!' : '⚠️ Account Created - Email Not Sent'}
+              </h3>
               <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>{successMessage}</p>
-              <p style={{ fontSize: '0.9rem', color: '#66bb6a' }}>
-                Please check your email (including spam folder) and click the verification link to activate your account.
-              </p>
+              {emailSent ? (
+                <p style={{ fontSize: '0.9rem', color: '#66bb6a' }}>
+                  Please check your email (including spam folder) and click the verification link to activate your account.
+                </p>
+              ) : (
+                <div>
+                  <p style={{ fontSize: '0.9rem', marginBottom: '15px' }}>
+                    You can try to resend the verification email from the verification page.
+                  </p>
+                  <Link 
+                    to="/seller/verify" 
+                    state={{ email: userEmail }}
+                    className="btn-primary"
+                    style={{ marginRight: '10px' }}
+                  >
+                    Resend Verification Email
+                  </Link>
+                </div>
+              )}
               <div style={{ marginTop: '20px' }}>
                 <Link to="/seller/login" className="btn-secondary">
                   Go to Login
