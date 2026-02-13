@@ -70,7 +70,17 @@ const SellerEmailVerificationPage = () => {
         { email: resendEmail }
       );
       
-      setResendSuccess(true);
+      // Check if email was already verified
+      if (response.data.alreadyVerified) {
+        setStatus('success');
+        setMessage(response.data.message);
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          navigate('/seller/login');
+        }, 2000);
+      } else {
+        setResendSuccess(true);
+      }
       // Don't clear the email field - keep it in case they need to try again
     } catch (error) {
       setResendError(error.response?.data?.message || 'Failed to resend verification email');
