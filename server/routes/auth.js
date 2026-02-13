@@ -20,6 +20,9 @@ const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAI
 // Error codes that indicate configuration issues (grouped for easier maintenance)
 const CONFIG_ERROR_CODES = ['EMAIL_NOT_CONFIGURED', 'EMAIL_PLACEHOLDER_VALUES'];
 
+// Error codes that indicate authentication issues (grouped for easier maintenance)
+const AUTH_ERROR_CODES = ['EMAIL_AUTH_FAILED'];
+
 // Email transporter configuration
 const createEmailTransporter = () => {
   // Check if using Gmail (simple configuration)
@@ -224,7 +227,7 @@ const getUserFriendlyEmailErrorMessage = (emailResult) => {
   
   if (CONFIG_ERROR_CODES.includes(emailResult.code)) {
     return 'Email service is not configured. Please contact support.';
-  } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
+  } else if (AUTH_ERROR_CODES.includes(emailResult.code)) {
     return 'Email service authentication failed. Please contact support.';
   } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
     return 'Could not connect to email server. Please try again in a few moments.';
@@ -310,7 +313,7 @@ router.post('/seller/signup', async (req, res) => {
       responseMessage = 'Seller account created successfully! Please check your email to verify your account.';
     } else {
       const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
-      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} You can use the "Resend Verification Email" option.`;
+      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail.replace(/\.$/, '')} - you can use the "Resend Verification Email" option.`;
     }
 
     res.status(201).json({
