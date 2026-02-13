@@ -11,6 +11,10 @@ const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')[0]
   .trim() || 'http://localhost:3000';
 
+// When true, accounts are auto-verified if email service is not configured
+// This allows the application to function without email during initial deployment
+const SKIP_EMAIL_VERIFICATION = process.env.SKIP_EMAIL_VERIFICATION === 'true';
+
 // Error codes that are safe to expose to clients (don't reveal system configuration)
 // Configuration errors (EMAIL_NOT_CONFIGURED, EMAIL_PLACEHOLDER_VALUES) and 
 // authentication errors (EMAIL_AUTH_FAILED) are excluded because they reveal
@@ -298,14 +302,63 @@ router.post('/seller/signup', async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create seller with email_verified = FALSE
+    // Check if email service is configured
+    const emailConfigured = process.env.EMAIL_USER && process.env.EMAIL_PASSWORD &&
+      process.env.EMAIL_USER !== 'your-email@gmail.com' &&
+      process.env.EMAIL_PASSWORD !== 'your-app-password' &&
+      process.env.EMAIL_PASSWORD !== 'your-password' &&
+      process.env.EMAIL_PASSWORD !== 'your-16-character-app-password';
+
+    // Auto-verify if SKIP_EMAIL_VERIFICATION is enabled and email is not configured
+    const autoVerify = SKIP_EMAIL_VERIFICATION && !emailConfigured;
+
+    // Prepare verification fields based on auto-verify status
+    const emailVerified = autoVerify;
+    const verificationTokenValue = autoVerify ? null : verificationToken;
+    const verificationExpiresValue = autoVerify ? null : verificationExpires.toISOString();
+
+    // Create seller with email_verified based on auto-verify status
     // Note: shop_name defaults to seller's name
     const result = await db.run(`
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, shop_name, is_active,
         email_verified, email_verification_token, email_verification_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)
-    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, verificationToken, verificationExpires.toISOString()]);
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9, $10, $11)
+    `, [
+      name,
+      slug,
+      email,
+      hashedPassword,
+      phone || null,
+      location || null,
+      description || null,
+      name, // shop_name defaults to seller's name
+      emailVerified,
+      verificationTokenValue,
+      verificationExpiresValue
+    ]);
+
+    // If auto-verified, skip email sending and return success
+    if (autoVerify) {
+      console.log('📧 Email not configured, auto-verifying seller account for:', email);
+      return res.status(201).json({
+        success: true,
+        message: 'Seller account created and verified successfully! You can now log in.',
+        emailVerificationRequired: false,
+        emailSent: false,
+        autoVerified: true,
+        seller: {
+          id: result.id,
+          name,
+          email,
+          slug,
+          phone,
+          location,
+          description,
+          email_verified: true
+        }
+      });
+    }
 
     // Send verification email
     const emailResult = await sendVerificationEmail(email, name, verificationToken);
