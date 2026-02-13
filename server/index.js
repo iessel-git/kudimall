@@ -3,7 +3,17 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+const serverEnvPath = path.join(__dirname, '.env');
+if (fs.existsSync(serverEnvPath)) {
+  dotenv.config({ path: serverEnvPath });
+} else {
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(`${serverEnvPath} not found; falling back to root .env or existing environment variables`);
+  }
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
