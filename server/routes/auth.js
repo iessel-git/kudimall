@@ -394,7 +394,7 @@ router.post('/seller/login', async (req, res) => {
       // Ensure there is a fresh verification token available
       let verificationToken = seller.email_verification_token;
       const expiresAt = seller.email_verification_expires ? new Date(seller.email_verification_expires) : null;
-      const tokenExpired = !expiresAt || Date.now() > expiresAt.getTime();
+      const tokenExpired = !expiresAt || expiresAt.getTime() < Date.now();
 
       if (!verificationToken || tokenExpired) {
         verificationToken = crypto.randomBytes(32).toString('hex');
@@ -413,9 +413,10 @@ router.post('/seller/login', async (req, res) => {
       const emailResult = await sendVerificationEmail(seller.email, seller.name, verificationToken);
       const exposableErrorInfo = getExposableErrorInfo(emailResult);
 
+      const baseVerificationMessage = 'Please verify your email address before logging in';
       const userFriendlyMessage = emailResult.success
-        ? 'Please verify your email address before logging in. A new verification link has been sent to your inbox.'
-        : `${getUserFriendlyEmailErrorMessage(emailResult) || 'Please verify your email address before logging in'}.`;
+        ? `${baseVerificationMessage}. A new verification link has been sent to your inbox.`
+        : `${getUserFriendlyEmailErrorMessage(emailResult) || baseVerificationMessage}.`;
 
       return res.status(403).json({ 
         error: 'Email not verified',
