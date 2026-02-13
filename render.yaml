@@ -25,6 +25,19 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         value: https://kudimall.onrender.com
+      # Email Configuration
+      - key: EMAIL_USER
+        sync: false  # Set this in Render dashboard
+      - key: EMAIL_PASSWORD
+        sync: false  # Set this in Render dashboard
+      - key: EMAIL_HOST
+        value: mail.csetechsolution.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_SECURE
+        value: "false"
+      - key: SKIP_EMAIL_VERIFICATION
+        value: "false"
     healthCheckPath: /api/health
     
   # PostgreSQL Database

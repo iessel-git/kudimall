@@ -11,6 +11,9 @@ const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')[0]
   .trim() || 'http://localhost:3000';
 
+// Skip email verification flag (useful for development/testing)
+const SKIP_EMAIL_VERIFICATION = process.env.SKIP_EMAIL_VERIFICATION === 'true';
+
 // Error codes that are safe to expose to clients (don't reveal system configuration)
 // Configuration errors (EMAIL_NOT_CONFIGURED, EMAIL_PLACEHOLDER_VALUES) and 
 // authentication errors (EMAIL_AUTH_FAILED) are excluded because they reveal
@@ -298,22 +301,33 @@ router.post('/seller/signup', async (req, res) => {
     const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create seller with email_verified = FALSE
+    // Determine if email should be auto-verified (when SKIP_EMAIL_VERIFICATION is true)
+    const autoVerifyEmail = SKIP_EMAIL_VERIFICATION;
+
+    // Create seller with email_verified based on SKIP_EMAIL_VERIFICATION setting
+    // Always store the verification token in case verification is later required
     // Note: shop_name defaults to seller's name
     const result = await db.run(`
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, shop_name, is_active,
         email_verified, email_verification_token, email_verification_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)
-    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, verificationToken, verificationExpires.toISOString()]);
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9, $10, $11)
+    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, autoVerifyEmail, verificationToken, verificationExpires.toISOString()]);
 
-    // Send verification email
-    const emailResult = await sendVerificationEmail(email, name, verificationToken);
-    const exposableErrorInfo = getExposableErrorInfo(emailResult);
+    // Send verification email only if not skipping verification
+    let emailResult = null;
+    let exposableErrorInfo = {};
+    
+    if (!SKIP_EMAIL_VERIFICATION) {
+      emailResult = await sendVerificationEmail(email, name, verificationToken);
+      exposableErrorInfo = getExposableErrorInfo(emailResult);
+    }
 
     // Construct appropriate message based on email result
     let responseMessage;
-    if (emailResult.success) {
+    if (SKIP_EMAIL_VERIFICATION) {
+      responseMessage = 'Seller account created successfully! Email verification has been skipped.';
+    } else if (emailResult && emailResult.success) {
       responseMessage = 'Seller account created successfully! Please check your email to verify your account.';
     } else {
       const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
@@ -323,8 +337,8 @@ router.post('/seller/signup', async (req, res) => {
     res.status(201).json({
       success: true,
       message: responseMessage,
-      emailVerificationRequired: true,
-      emailSent: emailResult.success,
+      emailVerificationRequired: !SKIP_EMAIL_VERIFICATION,
+      emailSent: emailResult ? emailResult.success : false,
       ...exposableErrorInfo,
       seller: {
         id: result.id,
@@ -334,7 +348,7 @@ router.post('/seller/signup', async (req, res) => {
         phone,
         location,
         description,
-        email_verified: false
+        email_verified: autoVerifyEmail
       }
     });
   } catch (error) {
@@ -389,8 +403,8 @@ router.post('/seller/login', async (req, res) => {
       });
     }
 
-    // Check if email is verified
-    if (!seller.email_verified) {
+    // Check if email is verified (skip check if SKIP_EMAIL_VERIFICATION is enabled)
+    if (!seller.email_verified && !SKIP_EMAIL_VERIFICATION) {
       // Ensure there is a fresh verification token available
       let verificationToken = seller.email_verification_token;
       const expiresAt = seller.email_verification_expires ? new Date(seller.email_verification_expires) : null;
