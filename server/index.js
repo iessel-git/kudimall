@@ -10,7 +10,7 @@ if (fs.existsSync(serverEnvPath)) {
   dotenv.config({ path: serverEnvPath });
 } else {
   if (process.env.NODE_ENV !== 'production') {
-    console.warn('server/.env not found; falling back to root .env or existing environment variables');
+    console.warn(`${serverEnvPath} not found; falling back to root .env or existing environment variables`);
   }
   dotenv.config();
 }
