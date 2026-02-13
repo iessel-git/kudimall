@@ -4,6 +4,10 @@ import axios from 'axios';
 import { API_BASE_URL } from '../services/api';
 import '../styles/AuthPage.css';
 
+// Constants
+const REDIRECT_DELAY_MS = 3000; // Delay before redirecting after successful verification
+const REDIRECT_DELAY_ALREADY_VERIFIED_MS = 2000; // Delay before redirecting when already verified
+
 const SellerEmailVerificationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -43,7 +47,7 @@ const SellerEmailVerificationPage = () => {
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/seller/login');
-        }, 3000);
+        }, REDIRECT_DELAY_MS);
       } catch (error) {
         if (error.response?.data?.expired) {
           setStatus('expired');
@@ -77,7 +81,7 @@ const SellerEmailVerificationPage = () => {
         // Redirect to login after 2 seconds
         setTimeout(() => {
           navigate('/seller/login');
-        }, 2000);
+        }, REDIRECT_DELAY_ALREADY_VERIFIED_MS);
       } else {
         setResendSuccess(true);
       }
@@ -147,32 +151,14 @@ const SellerEmailVerificationPage = () => {
                 <p>{message || 'Your verification link has expired. Please request a new one.'}</p>
                 
                 {resendSuccess && (
-                  <div className="success-message" style={{
-                    background: 'rgba(76, 175, 80, 0.1)',
-                    border: '2px solid rgba(76, 175, 80, 0.5)',
-                    color: '#4caf50',
-                    padding: '15px',
-                    borderRadius: '8px',
-                    marginBottom: '15px',
-                    textAlign: 'center'
-                  }}>
+                  <div className="success-message">
                     <strong>✓ Verification email sent successfully!</strong>
-                    <p style={{ marginTop: '8px', fontSize: '0.9rem' }}>
-                      Please check your email inbox (and spam folder) for the verification link.
-                    </p>
+                    <p>Please check your email inbox (and spam folder) for the verification link.</p>
                   </div>
                 )}
 
                 {resendError && (
-                  <div className="error-message" style={{
-                    background: 'rgba(244, 67, 54, 0.1)',
-                    border: '2px solid rgba(244, 67, 54, 0.5)',
-                    color: '#f44336',
-                    padding: '15px',
-                    borderRadius: '8px',
-                    marginBottom: '15px',
-                    textAlign: 'center'
-                  }}>
+                  <div className="error-message">
                     <strong>✗ {resendError}</strong>
                   </div>
                 )}
