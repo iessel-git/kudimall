@@ -195,10 +195,10 @@ router.post('/seller/signup', async (req, res) => {
     // Create seller with email_verified = FALSE
     const result = await db.run(`
       INSERT INTO sellers (
-        name, slug, email, password, phone, location, description, is_active,
+        name, slug, email, password, phone, location, description, shop_name, is_active,
         email_verified, email_verification_token, email_verification_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, FALSE, $8, $9)
-    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, verificationToken, verificationExpires.toISOString()]);
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)
+    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name, verificationToken, verificationExpires.toISOString()]);
 
     // Send verification email
     const emailSent = await sendVerificationEmail(email, name, verificationToken);

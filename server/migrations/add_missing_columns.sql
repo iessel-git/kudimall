@@ -7,6 +7,9 @@
 -- SELLERS TABLE - Add missing columns
 -- ============================================================================
 
+-- Make shop_name nullable to support new seller signup flow
+ALTER TABLE sellers ALTER COLUMN shop_name DROP NOT NULL;
+
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS name VARCHAR(255);
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE;
