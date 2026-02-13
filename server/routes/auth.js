@@ -604,14 +604,14 @@ router.post('/seller/resend-verification', async (req, res) => {
     } else {
       // Provide more specific error message based on error code
       let userMessage = 'Failed to send verification email. Please try again later.';
-      let shouldExposeCode = true;
+      
+      // Error codes that are safe to expose to clients (don't reveal system configuration)
+      const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
       
       if (emailResult.code === 'EMAIL_NOT_CONFIGURED' || emailResult.code === 'EMAIL_PLACEHOLDER_VALUES') {
         userMessage = 'Email service is not configured. Please contact support.';
-        shouldExposeCode = false; // Don't expose configuration details to clients
       } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
         userMessage = 'Email service authentication failed. Please contact support.';
-        shouldExposeCode = false; // Don't expose authentication details to clients
       } else if (emailResult.code === 'EMAIL_CONNECTION_FAILED') {
         userMessage = 'Could not connect to email server. Please try again in a few moments.';
       }
@@ -619,7 +619,11 @@ router.post('/seller/resend-verification', async (req, res) => {
       res.status(500).json({
         error: 'Email failed',
         message: userMessage,
-        errorCode: (shouldExposeCode && process.env.NODE_ENV === 'development') ? emailResult.code : undefined,
+        // Only expose error codes in development mode, and only for non-sensitive errors
+        errorCode: process.env.NODE_ENV === 'development' && EXPOSABLE_ERROR_CODES.includes(emailResult.code) 
+          ? emailResult.code 
+          : undefined,
+        // Provide detailed error information in development mode for debugging
         errorDetails: process.env.NODE_ENV === 'development' ? emailResult.details : undefined
       });
     }
