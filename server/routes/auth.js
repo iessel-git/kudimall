@@ -11,6 +11,9 @@ const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')[0]
   .trim() || 'http://localhost:3000';
 
+// Error codes that are safe to expose to clients (don't reveal system configuration)
+const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
+
 // Email transporter configuration
 const createEmailTransporter = () => {
   // Check if using Gmail (simple configuration)
@@ -604,9 +607,6 @@ router.post('/seller/resend-verification', async (req, res) => {
     } else {
       // Provide more specific error message based on error code
       let userMessage = 'Failed to send verification email. Please try again later.';
-      
-      // Error codes that are safe to expose to clients (don't reveal system configuration)
-      const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
       
       if (emailResult.code === 'EMAIL_NOT_CONFIGURED' || emailResult.code === 'EMAIL_PLACEHOLDER_VALUES') {
         userMessage = 'Email service is not configured. Please contact support.';
