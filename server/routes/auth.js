@@ -312,6 +312,11 @@ router.post('/seller/signup', async (req, res) => {
     // Auto-verify if SKIP_EMAIL_VERIFICATION is enabled and email is not configured
     const autoVerify = SKIP_EMAIL_VERIFICATION && !emailConfigured;
 
+    // Prepare verification fields based on auto-verify status
+    const emailVerified = autoVerify;
+    const verificationTokenValue = autoVerify ? null : verificationToken;
+    const verificationExpiresValue = autoVerify ? null : verificationExpires.toISOString();
+
     // Create seller with email_verified based on auto-verify status
     // Note: shop_name defaults to seller's name
     const result = await db.run(`
@@ -319,7 +324,19 @@ router.post('/seller/signup', async (req, res) => {
         name, slug, email, password, phone, location, description, shop_name, is_active,
         email_verified, email_verification_token, email_verification_expires
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, $9, $10, $11)
-    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, autoVerify, autoVerify ? null : verificationToken, autoVerify ? null : verificationExpires.toISOString()]);
+    `, [
+      name,
+      slug,
+      email,
+      hashedPassword,
+      phone || null,
+      location || null,
+      description || null,
+      name, // shop_name defaults to seller's name
+      emailVerified,
+      verificationTokenValue,
+      verificationExpiresValue
+    ]);
 
     // If auto-verified, skip email sending and return success
     if (autoVerify) {
