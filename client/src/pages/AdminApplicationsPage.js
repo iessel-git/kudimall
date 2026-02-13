@@ -2,6 +2,27 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getSellerApplications, updateSellerApplication } from '../services/api';
 import '../styles/AdminApplicationsPage.css';
 
+/**
+ * Admin Applications Page
+ * 
+ * This page provides an interface for managing seller applications.
+ * It connects to the /api/seller-applications endpoint.
+ * 
+ * API Endpoints used:
+ * - GET /api/seller-applications - List all applications (with optional status filter)
+ * - PATCH /api/seller-applications/:id - Update application status
+ * 
+ * Features:
+ * - View all seller applications
+ * - Filter applications by status (pending, reviewing, approved, rejected)
+ * - View detailed application information
+ * - Approve or reject applications
+ * - Add admin notes to applications
+ * 
+ * Access: Direct URL - /admin/applications
+ * API Info: GET /api/seller-applications/info
+ */
+
 const AdminApplicationsPage = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -127,6 +127,13 @@ app.get('/', (req, res) => {
       wishlist: '/api/wishlist',
       cart: '/api/cart',
       deals: '/api/deals'
+    },
+    adminPages: {
+      'seller-applications': {
+        apiEndpoint: '/api/seller-applications',
+        adminPage: '/admin/applications',
+        description: 'Manage seller applications - view, approve, or reject applications'
+      }
     }
   });
 });
