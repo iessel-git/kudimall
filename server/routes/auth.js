@@ -12,7 +12,13 @@ const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .trim() || 'http://localhost:3000';
 
 // Error codes that are safe to expose to clients (don't reveal system configuration)
+// Configuration errors (EMAIL_NOT_CONFIGURED, EMAIL_PLACEHOLDER_VALUES) and 
+// authentication errors (EMAIL_AUTH_FAILED) are excluded because they reveal
+// details about the server's email setup and credentials, which could aid attackers.
 const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
+
+// Error codes that indicate configuration issues (grouped for easier maintenance)
+const CONFIG_ERROR_CODES = ['EMAIL_NOT_CONFIGURED', 'EMAIL_PLACEHOLDER_VALUES'];
 
 // Email transporter configuration
 const createEmailTransporter = () => {
@@ -153,7 +159,7 @@ const sendVerificationEmail = async (email, name, token) => {
       success: false, 
       error: errorMessage,
       code: errorCode,
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined
     };
   }
 };
@@ -608,7 +614,7 @@ router.post('/seller/resend-verification', async (req, res) => {
       // Provide more specific error message based on error code
       let userMessage = 'Failed to send verification email. Please try again later.';
       
-      if (emailResult.code === 'EMAIL_NOT_CONFIGURED' || emailResult.code === 'EMAIL_PLACEHOLDER_VALUES') {
+      if (CONFIG_ERROR_CODES.includes(emailResult.code)) {
         userMessage = 'Email service is not configured. Please contact support.';
       } else if (emailResult.code === 'EMAIL_AUTH_FAILED') {
         userMessage = 'Email service authentication failed. Please contact support.';
@@ -619,12 +625,12 @@ router.post('/seller/resend-verification', async (req, res) => {
       res.status(500).json({
         error: 'Email failed',
         message: userMessage,
-        // Only expose error codes in development mode, and only for non-sensitive errors
-        errorCode: process.env.NODE_ENV === 'development' && EXPOSABLE_ERROR_CODES.includes(emailResult.code) 
+        // Only expose error codes in non-production environments, and only for non-sensitive errors
+        errorCode: process.env.NODE_ENV !== 'production' && EXPOSABLE_ERROR_CODES.includes(emailResult.code) 
           ? emailResult.code 
           : undefined,
-        // Provide detailed error information in development mode for debugging
-        errorDetails: process.env.NODE_ENV === 'development' ? emailResult.details : undefined
+        // Provide detailed error information in non-production environments for debugging
+        errorDetails: process.env.NODE_ENV !== 'production' ? emailResult.details : undefined
       });
     }
   } catch (error) {
