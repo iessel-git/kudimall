@@ -4,6 +4,10 @@ import axios from 'axios';
 import { API_BASE_URL } from '../services/api';
 import '../styles/AuthPage.css';
 
+// Constants
+const REDIRECT_DELAY_MS = 3000; // Delay before redirecting after successful verification
+const REDIRECT_DELAY_ALREADY_VERIFIED_MS = 2000; // Delay before redirecting when already verified
+
 const SellerEmailVerificationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -12,6 +16,9 @@ const SellerEmailVerificationPage = () => {
   const [message, setMessage] = useState('');
   const [resendEmail, setResendEmail] = useState(location.state?.email || '');
   const [resending, setResending] = useState(false);
+  const [emailPreFilled, setEmailPreFilled] = useState(!!location.state?.email);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resendError, setResendError] = useState('');
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -21,7 +28,7 @@ const SellerEmailVerificationPage = () => {
         // If no token but email provided via navigation state, show resend form
         if (location.state?.email) {
           setStatus('expired');
-          setMessage('Please enter your email to receive a new verification link.');
+          setMessage('Your email address has been pre-filled below. Click the button to send a verification email.');
           return;
         }
         setStatus('error');
@@ -40,7 +47,7 @@ const SellerEmailVerificationPage = () => {
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/seller/login');
-        }, 3000);
+        }, REDIRECT_DELAY_MS);
       } catch (error) {
         if (error.response?.data?.expired) {
           setStatus('expired');
@@ -58,6 +65,8 @@ const SellerEmailVerificationPage = () => {
   const handleResendVerification = async (e) => {
     e.preventDefault();
     setResending(true);
+    setResendSuccess(false);
+    setResendError('');
 
     try {
       const response = await axios.post(
@@ -65,10 +74,20 @@ const SellerEmailVerificationPage = () => {
         { email: resendEmail }
       );
       
-      alert(response.data.message);
-      setResendEmail('');
+      // Check if email was already verified
+      if (response.data.alreadyVerified) {
+        setStatus('success');
+        setMessage(response.data.message);
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          navigate('/seller/login');
+        }, REDIRECT_DELAY_ALREADY_VERIFIED_MS);
+      } else {
+        setResendSuccess(true);
+      }
+      // Don't clear the email field - keep it in case they need to try again
     } catch (error) {
-      alert(error.response?.data?.message || 'Failed to resend verification email');
+      setResendError(error.response?.data?.message || 'Failed to resend verification email');
     } finally {
       setResending(false);
     }
@@ -128,12 +147,25 @@ const SellerEmailVerificationPage = () => {
             {status === 'expired' && (
               <div className="verification-status expired">
                 <div className="warning-icon">⚠</div>
-                <h3>Verification Link Expired</h3>
+                <h3>{emailPreFilled ? 'Send Verification Email' : 'Verification Link Expired'}</h3>
                 <p>{message || 'Your verification link has expired. Please request a new one.'}</p>
                 
+                {resendSuccess && (
+                  <div className="success-message">
+                    <strong>✓ Verification email sent successfully!</strong>
+                    <p>Please check your email inbox (and spam folder) for the verification link.</p>
+                  </div>
+                )}
+
+                {resendError && (
+                  <div className="error-message">
+                    <strong>✗ {resendError}</strong>
+                  </div>
+                )}
+
                 <form onSubmit={handleResendVerification} className="resend-form">
                   <div className="form-group">
-                    <label>Enter your email address</label>
+                    <label>{emailPreFilled ? 'Your email address' : 'Enter your email address'}</label>
                     <input
                       type="email"
                       value={resendEmail}
