@@ -781,6 +781,47 @@ app.post('/api/fix-existing-cart-items', async (req, res) => {
   }
 });
 
+// Debug email configuration (safe - doesn't expose credentials)
+app.get('/api/debug/email-config', async (req, res) => {
+  try {
+    const hasEmailUser = !!process.env.EMAIL_USER;
+    const hasEmailPassword = !!process.env.EMAIL_PASSWORD;
+    const emailUser = process.env.EMAIL_USER ? 
+      `${process.env.EMAIL_USER.substring(0, 3)}...${process.env.EMAIL_USER.substring(process.env.EMAIL_USER.length - 5)}` : 
+      'NOT_SET';
+    const isGmail = process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com');
+    const isPlaceholder = 
+      process.env.EMAIL_USER === 'your-email@gmail.com' ||
+      process.env.EMAIL_PASSWORD === 'your-app-password' ||
+      process.env.EMAIL_PASSWORD === 'your-password' ||
+      process.env.EMAIL_PASSWORD === 'your-16-character-app-password';
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'NOT_SET';
+    
+    res.json({
+      status: 'success',
+      configuration: {
+        hasEmailUser,
+        hasEmailPassword,
+        emailUserPreview: emailUser,
+        isGmail,
+        isPlaceholder,
+        frontendUrl,
+        environment: process.env.NODE_ENV || 'development'
+      },
+      diagnosis: hasEmailUser && hasEmailPassword && !isPlaceholder ? 
+        'Email configured' : 
+        'Email not properly configured'
+    });
+  } catch (error) {
+    console.error('Debug email config error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
