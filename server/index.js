@@ -565,6 +565,48 @@ app.post('/api/add-more-categories', async (req, res) => {
   }
 });
 
+// Fix featured products - clear all and mark 12 new ones
+app.post('/api/fix-featured-products', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // First, clear all featured products
+    await db.run('UPDATE products SET is_featured = FALSE WHERE is_featured = TRUE');
+    
+    // Then mark 12 random products from verified sellers as featured
+    const products = await db.all(`
+      SELECT p.id 
+      FROM products p
+      JOIN sellers s ON p.seller_id = s.id
+      WHERE s.is_verified = TRUE AND p.is_available = TRUE
+      ORDER BY RANDOM()
+      LIMIT 12
+    `);
+    
+    let updated = 0;
+    for (const product of products) {
+      const result = await db.run('UPDATE products SET is_featured = TRUE WHERE id = $1', [product.id]);
+      updated++;
+    }
+    
+    // Verify
+    const featuredCount = await db.get('SELECT COUNT(*) as count FROM products WHERE is_featured = TRUE');
+    
+    res.json({ 
+      status: 'success', 
+      message: `Marked ${updated} products as featured`,
+      updated,
+      verified: featuredCount.count
+    });
+  } catch (error) {
+    console.error('Fix featured products error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
