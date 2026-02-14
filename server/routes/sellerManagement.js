@@ -40,6 +40,10 @@ const generateSlug = (name) => {
     .replace(/^-+|-+$/g, '');
 };
 
+const isMissingFlashDealsTable = (error) => {
+  return error && error.code === '42P01' && /flash_deals/i.test(error.message || '');
+};
+
 // GET /api/seller/products - Get seller's own products
 router.get('/products', authenticateToken, async (req, res) => {
   try {
@@ -460,6 +464,14 @@ router.get('/deals', authenticateToken, async (req, res) => {
 
     res.json({ success: true, deals });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing for seller deals list');
+      return res.json({
+        success: true,
+        deals: [],
+        message: 'Flash deals feature is not available yet. Please run ecommerce migration.'
+      });
+    }
     console.error('Error fetching seller deals:', error);
     res.status(500).json({ error: 'Failed to fetch deals' });
   }
@@ -577,6 +589,13 @@ router.post('/deals', authenticateToken, async (req, res) => {
       deal: newDeal
     });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing for seller deal creation');
+      return res.status(503).json({
+        error: 'Flash deals unavailable',
+        message: 'Flash deals feature is not available yet. Please run ecommerce migration.'
+      });
+    }
     console.error('Error creating flash deal:', error);
     res.status(500).json({ error: 'Failed to create flash deal' });
   }
@@ -665,6 +684,13 @@ router.put('/deals/:id', authenticateToken, async (req, res) => {
       deal: updatedDeal
     });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing for seller deal update');
+      return res.status(503).json({
+        error: 'Flash deals unavailable',
+        message: 'Flash deals feature is not available yet. Please run ecommerce migration.'
+      });
+    }
     console.error('Error updating flash deal:', error);
     res.status(500).json({ error: 'Failed to update flash deal' });
   }
@@ -706,6 +732,13 @@ router.delete('/deals/:id', authenticateToken, async (req, res) => {
       message: 'Flash deal deleted successfully'
     });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing for seller deal deletion');
+      return res.status(503).json({
+        error: 'Flash deals unavailable',
+        message: 'Flash deals feature is not available yet. Please run ecommerce migration.'
+      });
+    }
     console.error('Error deleting flash deal:', error);
     res.status(500).json({ error: 'Failed to delete flash deal' });
   }

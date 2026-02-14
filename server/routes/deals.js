@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../models/database');
 
+const isMissingFlashDealsTable = (error) => {
+  return error && error.code === '42P01' && /flash_deals/i.test(error.message || '');
+};
+
 // ============================================================================
 // FLASH DEALS ROUTES
 // Note: These queries use PostgreSQL-specific functions (EXTRACT, EPOCH, NOW())
@@ -51,6 +55,18 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing, returning empty deals list');
+      return res.json({
+        deals: [],
+        pagination: {
+          page: parseInt(req.query.page || 1),
+          limit: parseInt(req.query.limit || 12),
+          total: 0,
+          pages: 0
+        }
+      });
+    }
     console.error('Error fetching flash deals:', error);
     res.status(500).json({ error: error.message });
   }
@@ -78,6 +94,10 @@ router.get('/product/:productId', async (req, res) => {
 
     res.json({ deal });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing, returning null product deal');
+      return res.json({ deal: null });
+    }
     console.error('Error fetching deal:', error);
     res.status(500).json({ error: error.message });
   }
@@ -105,6 +125,10 @@ router.get('/ending-soon', async (req, res) => {
 
     res.json({ deals });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing, returning empty ending-soon deals');
+      return res.json({ deals: [] });
+    }
     console.error('Error fetching ending soon deals:', error);
     res.status(500).json({ error: error.message });
   }
@@ -134,6 +158,10 @@ router.get('/top', async (req, res) => {
 
     res.json({ deals });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing, returning empty top deals');
+      return res.json({ deals: [] });
+    }
     console.error('Error fetching top deals:', error);
     res.status(500).json({ error: error.message });
   }
@@ -158,6 +186,10 @@ router.get('/upcoming', async (req, res) => {
 
     res.json({ deals });
   } catch (error) {
+    if (isMissingFlashDealsTable(error)) {
+      console.warn('flash_deals table missing, returning empty upcoming deals');
+      return res.json({ deals: [] });
+    }
     console.error('Error fetching upcoming deals:', error);
     res.status(500).json({ error: error.message });
   }
