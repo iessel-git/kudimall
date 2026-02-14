@@ -678,6 +678,44 @@ app.post('/api/fix-product-categories', async (req, res) => {
   }
 });
 
+// Add missing cart_items columns
+app.post('/api/fix-cart-items-columns', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // Add saved_for_later column if it doesn't exist
+    try {
+      await db.run(`
+        ALTER TABLE cart_items 
+        ADD COLUMN IF NOT EXISTS saved_for_later BOOLEAN DEFAULT FALSE
+      `);
+    } catch (error) {
+      console.log('saved_for_later column might already exist or error:', error.message);
+    }
+    
+    // Add updated_at column if it doesn't exist
+    try {
+      await db.run(`
+        ALTER TABLE cart_items 
+        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      `);
+    } catch (error) {
+      console.log('updated_at column might already exist or error:', error.message);
+    }
+    
+    res.json({ 
+      status: 'success',
+      message: 'Cart items columns updated successfully'
+    });
+  } catch (error) {
+    console.error('Fix cart items columns error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Fix product slugs
 app.post('/api/fix-product-slugs', async (req, res) => {
   try {
