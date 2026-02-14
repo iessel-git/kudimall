@@ -187,15 +187,22 @@ router.post('/', requireAuth, async (req, res) => {
       cart = { id: result.rows[0].id };
     }
 
-    // Check for active flash deal
-    const deal = await db.get(
-      `SELECT deal_price FROM flash_deals 
-       WHERE product_id = $1 AND is_active = true 
-       AND starts_at <= NOW() AND ends_at > NOW()`,
-      [product_id]
-    );
-
-    const price = deal ? deal.deal_price : product.price;
+    // Check for active flash deal (gracefully handle if table doesn't exist)
+    let price = product.price;
+    try {
+      const deal = await db.get(
+        `SELECT deal_price FROM flash_deals 
+         WHERE product_id = $1 AND is_active = true 
+         AND starts_at <= NOW() AND ends_at > NOW()`,
+        [product_id]
+      );
+      if (deal && deal.deal_price) {
+        price = deal.deal_price;
+      }
+    } catch (error) {
+      // Flash deals table might not exist, use regular price
+      console.log('Flash deals not available, using regular price');
+    }
 
     // Add or update cart item
     await db.run(
@@ -269,15 +276,22 @@ router.post('/add', requireAuth, async (req, res) => {
       cart = { id: result.rows[0].id };
     }
 
-    // Check for active flash deal
-    const deal = await db.get(
-      `SELECT deal_price FROM flash_deals 
-       WHERE product_id = $1 AND is_active = true 
-       AND starts_at <= NOW() AND ends_at > NOW()`,
-      [product_id]
-    );
-
-    const price = deal ? deal.deal_price : product.price;
+    // Check for active flash deal (gracefully handle if table doesn't exist)
+    let price = product.price;
+    try {
+      const deal = await db.get(
+        `SELECT deal_price FROM flash_deals 
+         WHERE product_id = $1 AND is_active = true 
+         AND starts_at <= NOW() AND ends_at > NOW()`,
+        [product_id]
+      );
+      if (deal && deal.deal_price) {
+        price = deal.deal_price;
+      }
+    } catch (error) {
+      // Flash deals table might not exist, use regular price
+      console.log('Flash deals not available, using regular price');
+    }
 
     // Add or update cart item
     await db.run(

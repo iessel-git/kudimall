@@ -94,15 +94,24 @@ router.post('/', optionalBuyerAuth, async (req, res) => {
       return res.status(400).json({ error: 'Insufficient stock' });
     }
     
-    // Check for active flash deal
-    const deal = await db.get(
-      `SELECT deal_price FROM flash_deals 
-       WHERE product_id = $1 AND is_active = true 
-       AND starts_at <= NOW() AND ends_at > NOW()`,
-      [product_id]
-    );
+    // Check for active flash deal (gracefully handle if table doesn't exist)
+    let price = product.price;
+    let deal = null;
+    try {
+      deal = await db.get(
+        `SELECT deal_price FROM flash_deals 
+         WHERE product_id = $1 AND is_active = true 
+         AND starts_at <= NOW() AND ends_at > NOW()`,
+        [product_id]
+      );
+      if (deal && deal.deal_price) {
+        price = deal.deal_price;
+      }
+    } catch (error) {
+      // Flash deals table might not exist, use regular price
+      console.log('Flash deals not available, using regular price');
+    }
     
-    const price = deal ? deal.deal_price : product.price;
     const subtotal = price * quantity;
     const order_number = `KM-${uuidv4().slice(0, 8).toUpperCase()}`;
     
@@ -137,18 +146,19 @@ router.post('/', optionalBuyerAuth, async (req, res) => {
     
     // Update flash deal quantity_sold if deal was used (atomic to prevent overselling)
     if (deal) {
-      const dealUpdate = await db.run(
-        `UPDATE flash_deals 
-         SET quantity_sold = quantity_sold + $1 
-         WHERE product_id = $2 
-           AND is_active = true 
-           AND (quantity_available - quantity_sold) >= $1
-         RETURNING id`,
-        [quantity, product_id]
-      );
-      
-      if (!dealUpdate || dealUpdate.rowCount === 0) {
-        // Rollback product stock update
+      try {
+        const dealUpdate = await db.run(
+          `UPDATE flash_deals 
+           SET quantity_sold = quantity_sold + $1 
+           WHERE product_id = $2 
+             AND is_active = true 
+             AND (quantity_available - quantity_sold) >= $1
+           RETURNING id`,
+          [quantity, product_id]
+        );
+        
+        if (!dealUpdate || dealUpdate.rowCount === 0) {
+          // Rollback product stock update
         await db.run(
           'UPDATE products SET stock = stock + $1, sales = sales - $2 WHERE id = $3',
           [quantity, quantity, product_id]
@@ -157,6 +167,10 @@ router.post('/', optionalBuyerAuth, async (req, res) => {
           error: 'Flash deal sold out',
           message: 'This deal is no longer available. The quantity has been sold out.'
         });
+      }
+      } catch (error) {
+        // Flash deals table might not exist, continue without flash deal tracking
+        console.log('Flash deals update skipped:', error.message);
       }
     }
     
