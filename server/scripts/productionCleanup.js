@@ -90,14 +90,16 @@ const cleanupDuplicateProducts = async () => {
     console.log(`Product "${dup.name_lower}" (seller ${dup.seller_id}): keeping ID ${canonicalId}, removing ${duplicateIds.length} duplicates`);
 
     for (const duplicateId of duplicateIds) {
-      // Update order_items to point to canonical product
+      // Update order_items to point to canonical product (if table exists)
       await updateForeignKeyIfExists('order_items', 'product_id', duplicateId, canonicalId);
       
-      // Update cart_items to point to canonical product
+      // Update cart_items to point to canonical product (if table exists)
       await updateForeignKeyIfExists('cart_items', 'product_id', duplicateId, canonicalId);
 
-      // Delete product_images for duplicate product
-      await db.run('DELETE FROM product_images WHERE product_id = $1', [duplicateId]);
+      // Delete product_images for duplicate product (if table exists)
+      if (await hasColumn('product_images', 'product_id')) {
+        await db.run('DELETE FROM product_images WHERE product_id = $1', [duplicateId]);
+      }
 
       // Delete the duplicate product
       await db.run('DELETE FROM products WHERE id = $1', [duplicateId]);
@@ -137,7 +139,41 @@ const limitSellersToFive = async () => {
   deleteSellers.forEach(s => console.log(`  DELETE: ID ${s.id} - ${s.shop_name}`));
 
   for (const seller of deleteSellers) {
-    // Delete products for this seller (cascade will handle product_images, cart_items, order_items)
+    // Get all product IDs for this seller first
+    const sellerProducts = await db.all(
+      'SELECT id FROM products WHERE seller_id = $1',
+      [seller.id]
+    );
+    const productIds = sellerProducts.map(p => p.id);
+
+    if (productIds.length > 0) {
+      // Delete related data for these products (if tables exist)
+      if (await hasColumn('product_images', 'product_id')) {
+        for (const prodId of productIds) {
+          await db.run('DELETE FROM product_images WHERE product_id = $1', [prodId]);
+        }
+      }
+
+      if (await hasColumn('cart_items', 'product_id')) {
+        for (const prodId of productIds) {
+          await db.run('DELETE FROM cart_items WHERE product_id = $1', [prodId]);
+        }
+      }
+
+      if (await hasColumn('order_items', 'product_id')) {
+        for (const prodId of productIds) {
+          await db.run('DELETE FROM order_items WHERE product_id = $1', [prodId]);
+        }
+      }
+
+      if (await hasColumn('reviews', 'product_id')) {
+        for (const prodId of productIds) {
+          await db.run('DELETE FROM reviews WHERE product_id = $1', [prodId]);
+        }
+      }
+    }
+
+    // Delete products for this seller
     const productsDeleted = await db.run(
       'DELETE FROM products WHERE seller_id = $1',
       [seller.id]
