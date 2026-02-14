@@ -314,6 +314,31 @@ app.post('/api/debug/migrate', async (req, res) => {
   }
 });
 
+// Production migration endpoint for adding missing columns
+app.post('/api/run-missing-columns-migration', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    const fs = require('fs');
+    const path = require('path');
+    
+    const migrationPath = path.join(__dirname, 'migrations', 'add_missing_columns.sql');
+    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+    
+    await db.query(migrationSQL);
+    
+    res.json({ 
+      status: 'success', 
+      message: 'Missing columns migration completed successfully!' 
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
