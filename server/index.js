@@ -499,6 +499,72 @@ app.post('/api/setup-homepage', async (req, res) => {
   }
 });
 
+// Add more marketplace categories
+app.post('/api/add-more-categories', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    const generateSlug = (text) => {
+      return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+    };
+    
+    const newCategories = [
+      { name: 'Home & Garden', description: 'Furniture, decor, and garden supplies' },
+      { name: 'Beauty & Health', description: 'Cosmetics, skincare, and wellness products' },
+      { name: 'Sports & Outdoors', description: 'Fitness equipment and outdoor gear' },
+      { name: 'Toys & Games', description: 'Toys, games, and hobby items' },
+      { name: 'Books & Media', description: 'Books, music, movies, and more' },
+      { name: 'Automotive', description: 'Car parts and accessories' },
+      { name: 'Baby & Kids', description: 'Baby products and children\'s items' },
+      { name: 'Pets', description: 'Pet supplies and accessories' },
+      { name: 'Office Supplies', description: 'Stationery and office equipment' },
+      { name: 'Jewelry & Watches', description: 'Jewelry, watches, and accessories' }
+    ];
+    
+    let added = 0;
+    let skipped = 0;
+    
+    for (const category of newCategories) {
+      try {
+        // Check if category exists
+        const existing = await db.get('SELECT id FROM categories WHERE name = $1', [category.name]);
+        
+        if (existing) {
+          skipped++;
+          continue;
+        }
+        
+        const slug = generateSlug(category.name);
+        await db.run(
+          'INSERT INTO categories (name, description, slug) VALUES ($1, $2, $3)',
+          [category.name, category.description, slug]
+        );
+        added++;
+      } catch (err) {
+        console.error(`Failed to add category ${category.name}:`, err);
+      }
+    }
+    
+    res.json({ 
+      status: 'success', 
+      message: `Added ${added} new categories (${skipped} already existed)`,
+      added,
+      skipped
+    });
+  } catch (error) {
+    console.error('Add categories error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
