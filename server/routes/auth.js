@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../models/database');
 const logger = require('../utils/logger');
-const { sendMailWithFallback, getFrontendBaseUrl } = require('../utils/emailConfig');
+const { sendMailWithFallback, getFrontendBaseUrl, getEmailSender } = require('../utils/emailConfig');
 
 // Validate JWT_SECRET is set (critical security requirement)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -78,7 +78,7 @@ const sendVerificationEmail = async (email, name, token) => {
       const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
       
       const mailOptions = {
-        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        from: getEmailSender(),
         to: email,
         subject: '🔐 Verify Your KudiMall Seller Email',
         html: `
@@ -743,7 +743,7 @@ const sendPasswordResetEmail = async (email, name, token) => {
       const resetUrl = `${FRONTEND_BASE_URL}/seller/reset-password?token=${token}`;
       
       const mailOptions = {
-        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        from: getEmailSender(),
         to: email,
         subject: '🔑 Reset Your KudiMall Password',
         html: `

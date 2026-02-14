@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const db = require('../models/database');
 const logger = require('../utils/logger');
-const { sendMailWithFallback, getFrontendBaseUrl } = require('../utils/emailConfig');
+const { sendMailWithFallback, getFrontendBaseUrl, getEmailSender } = require('../utils/emailConfig');
 
 // Validate JWT_SECRET is set (critical security requirement)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -296,7 +296,7 @@ router.post('/forgot-password', async (req, res) => {
       const resetUrl = `${FRONTEND_BASE_URL}/buyer/reset-password?token=${resetToken}`;
       
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: getEmailSender(),
         to: buyer.email,
         subject: '🔐 Reset Your KudiMall Password',
         html: `
@@ -401,7 +401,7 @@ router.post('/reset-password', async (req, res) => {
     // Send confirmation email
     try {
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: getEmailSender(),
         to: buyer.email,
         subject: '✅ Your KudiMall Password Has Been Reset',
         html: `

@@ -194,6 +194,56 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KudiMall API is running' });
 });
 
+// Test email configuration endpoint (for debugging SMTP issues)
+app.post('/api/test-email', async (req, res) => {
+  try {
+    const { sendMailWithFallback, getEmailSender } = require('./utils/emailConfig');
+    const testEmail = req.body.email || process.env.EMAIL_USER;
+
+    if (!testEmail) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No email address provided for testing'
+      });
+    }
+
+    console.log(`\n🧪 Testing email configuration by sending to: ${testEmail}`);
+
+    await sendMailWithFallback({
+      from: getEmailSender(),
+      to: testEmail,
+      subject: '✅ KudiMall Email Test - Configuration Working!',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #c8a45a;">🎉 Email Configuration Success!</h2>
+          <p>Your KudiMall email system is working correctly.</p>
+          <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+          <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</p>
+          <hr>
+          <p style="color: #666; font-size: 12px;">This is an automated test email from KudiMall.</p>
+        </div>
+      `
+    });
+
+    res.json({
+      status: 'success',
+      message: `Test email sent successfully to ${testEmail}. Check your inbox!`,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Test email failed:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Email test failed. Check server logs for details.',
+      error: {
+        code: error.code,
+        message: error.message,
+        command: error.command
+      }
+    });
+  }
+});
+
 // Database schema verification endpoint (for debugging - restricted to development)
 app.get('/api/debug/schema', async (req, res) => {
   // Only allow in development environment

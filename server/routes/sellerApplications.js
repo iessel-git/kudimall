@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../models/database');
-const { sendMailWithFallback, getFrontendBaseUrl } = require('../utils/emailConfig');
+const { sendMailWithFallback, getFrontendBaseUrl, getEmailSender } = require('../utils/emailConfig');
 
 // GET /api/seller-applications/info - Get information about seller applications API
 router.get('/info', (req, res) => {
@@ -248,7 +248,7 @@ router.post('/', async (req, res) => {
     // Send email (non-blocking - don't fail if email fails)
     try {
       const mailOptions = {
-        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        from: getEmailSender(),
         to: 'csetechnologies6@gmail.com',
         subject: `New Seller Application: ${formData.storeName}`,
         html: emailHtml,
@@ -473,7 +473,7 @@ const createSellerAccountFromApplication = async (application) => {
 
     try {
       await sendMailWithFallback({
-        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        from: getEmailSender(),
         to: application.email,
         subject: '🎉 Welcome to KudiMall - Your Seller Application Approved!',
         html: `

@@ -176,17 +176,60 @@ const sendMailWithFallback = async (mailOptions) => {
   const configs = getSmtpFallbackConfigs();
   let lastError = null;
 
-  for (const config of configs) {
+  for (let i = 0; i < configs.length; i++) {
+    const config = configs[i];
     const transporter = nodemailer.createTransport(config);
+    
     try {
-      return await transporter.sendMail(mailOptions);
+      console.log(`📧 Attempting SMTP connection ${i + 1}/${configs.length}:`, {
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        requireTLS: config.requireTLS,
+        user: config.auth.user
+      });
+
+      // Verify connection before sending
+      await transporter.verify();
+      console.log(`✅ SMTP connection verified successfully`);
+      
+      // Send email
+      const result = await transporter.sendMail(mailOptions);
+      console.log(`✅ Email sent successfully to ${mailOptions.to}`);
+      return result;
+      
     } catch (error) {
       lastError = error;
-      console.warn(`SMTP send failed on ${config.host}:${config.port} (secure=${config.secure}) - ${error.message}`);
+      console.error(`❌ SMTP attempt ${i + 1}/${configs.length} failed:`, {
+        host: config.host,
+        port: config.port,
+        secure: config.secure,
+        errorCode: error.code,
+        errorMessage: error.message,
+        command: error.command,
+        response: error.response
+      });
     }
   }
 
+  // Provide detailed error information
+  const errorDetails = {
+    message: lastError?.message || 'Unknown error',
+    code: lastError?.code,
+    command: lastError?.command,
+    response: lastError?.response
+  };
+  
+  console.error('❌ All SMTP attempts failed. Final error:', errorDetails);
   throw lastError || new Error('Email send failed after SMTP fallback attempts');
+};
+
+const getEmailSender = () => {
+  const emailUser = process.env.EMAIL_USER || 'noreply@kudimall.com';
+  const senderName = process.env.EMAIL_SENDER_NAME || 'KudiMall';
+  
+  // Format as "KudiMall <email@example.com>" to hide raw email address
+  return `${senderName} <${emailUser}>`;
 };
 
 module.exports = {
@@ -194,5 +237,6 @@ module.exports = {
   getFrontendBaseUrl,
   getSmtpConfig,
   parseBoolean,
-  sendMailWithFallback
+  sendMailWithFallback,
+  getEmailSender
 };
