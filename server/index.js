@@ -440,6 +440,38 @@ app.post('/api/purge-seed-data', async (req, res) => {
   }
 });
 
+// Production cleanup: remove duplicates and limit to 5 sellers
+// ⚠️ WARNING: This permanently deletes data in production!
+app.post('/api/production-cleanup', async (req, res) => {
+  try {
+    // Simple authorization check - require secret key
+    const authHeader = req.headers['x-admin-secret'] || req.body.adminSecret;
+    const expectedSecret = process.env.ADMIN_SECRET || process.env.JWT_SECRET;
+    
+    if (!authHeader || authHeader !== expectedSecret) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Unauthorized - Invalid or missing admin secret'
+      });
+    }
+
+    const runProductionCleanup = require('./scripts/productionCleanup');
+    const summary = await runProductionCleanup();
+
+    res.json({
+      status: 'success',
+      message: 'Production cleanup completed successfully',
+      summary
+    });
+  } catch (error) {
+    console.error('Production cleanup error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+});
+
 // Setup homepage (categories, featured sellers, featured products)
 app.post('/api/setup-homepage', async (req, res) => {
   try {

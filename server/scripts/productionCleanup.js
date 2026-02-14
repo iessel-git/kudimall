@@ -176,42 +176,55 @@ const runProductionCleanup = async () => {
   console.log(`Host: ${process.env.DB_HOST || process.env.PGHOST}`);
   console.log('========================================');
 
-  try {
-    // Before counts
-    const beforeStats = {
-      categories: (await db.get('SELECT COUNT(*)::int as count FROM categories')).count,
-      products: (await db.get('SELECT COUNT(*)::int as count FROM products')).count,
-      sellers: (await db.get('SELECT COUNT(*)::int as count FROM sellers')).count,
-    };
+  // Before counts
+  const beforeStats = {
+    categories: (await db.get('SELECT COUNT(*)::int as count FROM categories')).count,
+    products: (await db.get('SELECT COUNT(*)::int as count FROM products')).count,
+    sellers: (await db.get('SELECT COUNT(*)::int as count FROM sellers')).count,
+  };
 
-    console.log('\n📊 Before cleanup:');
-    console.log(`  Categories: ${beforeStats.categories}`);
-    console.log(`  Products: ${beforeStats.products}`);
-    console.log(`  Sellers: ${beforeStats.sellers}`);
+  console.log('\n📊 Before cleanup:');
+  console.log(`  Categories: ${beforeStats.categories}`);
+  console.log(`  Products: ${beforeStats.products}`);
+  console.log(`  Sellers: ${beforeStats.sellers}`);
 
-    // Run cleanup operations in order
-    await cleanupDuplicateCategories();
-    await cleanupDuplicateProducts();
-    await limitSellersToFive();
+  // Run cleanup operations in order
+  const categoryResult = await cleanupDuplicateCategories();
+  const productResult = await cleanupDuplicateProducts();
+  const sellerResult = await limitSellersToFive();
 
-    // After counts
-    const afterStats = {
-      categories: (await db.get('SELECT COUNT(*)::int as count FROM categories')).count,
-      products: (await db.get('SELECT COUNT(*)::int as count FROM products')).count,
-      sellers: (await db.get('SELECT COUNT(*)::int as count FROM sellers')).count,
-    };
+  // After counts
+  const afterStats = {
+    categories: (await db.get('SELECT COUNT(*)::int as count FROM categories')).count,
+    products: (await db.get('SELECT COUNT(*)::int as count FROM products')).count,
+    sellers: (await db.get('SELECT COUNT(*)::int as count FROM sellers')).count,
+  };
 
-    console.log('\n📊 After cleanup:');
-    console.log(`  Categories: ${afterStats.categories} (was ${beforeStats.categories})`);
-    console.log(`  Products: ${afterStats.products} (was ${beforeStats.products})`);
-    console.log(`  Sellers: ${afterStats.sellers} (was ${beforeStats.sellers})`);
+  console.log('\n📊 After cleanup:');
+  console.log(`  Categories: ${afterStats.categories} (was ${beforeStats.categories})`);
+  console.log(`  Products: ${afterStats.products} (was ${beforeStats.products})`);
+  console.log(`  Sellers: ${afterStats.sellers} (was ${beforeStats.sellers})`);
 
-    console.log('\n✅ Production cleanup completed successfully!');
-    process.exit(0);
-  } catch (error) {
-    console.error('\n❌ Error during production cleanup:', error);
-    process.exit(1);
-  }
+  console.log('\n✅ Production cleanup completed successfully!');
+
+  return {
+    beforeStats,
+    afterStats,
+    categoryResult,
+    productResult,
+    sellerResult
+  };
 };
 
-runProductionCleanup();
+// Export for use in API endpoint
+module.exports = runProductionCleanup;
+
+// Run directly if called as script
+if (require.main === module) {
+  runProductionCleanup()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error('\n❌ Error during production cleanup:', error);
+      process.exit(1);
+    });
+}
