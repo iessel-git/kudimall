@@ -678,6 +678,45 @@ app.post('/api/fix-product-categories', async (req, res) => {
   }
 });
 
+// Fix product slugs
+app.post('/api/fix-product-slugs', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    const generateSlug = (text, id) => {
+      const baseSlug = text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      return `${baseSlug}-${id}`;
+    };
+    
+    // Get all products without slugs
+    const products = await db.all('SELECT id, name FROM products WHERE slug IS NULL');
+    
+    let updated = 0;
+    for (const product of products) {
+      const slug = generateSlug(product.name, product.id);
+      await db.run('UPDATE products SET slug = $1 WHERE id = $2', [slug, product.id]);
+      updated++;
+    }
+    
+    res.json({ 
+      status: 'success',
+      message: `Generated slugs for ${updated} products`,
+      updated
+    });
+  } catch (error) {
+    console.error('Fix product slugs error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
