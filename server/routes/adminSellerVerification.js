@@ -5,10 +5,25 @@ const db = require('../models/database');
 // GET /api/admin/sellers - List all sellers with verification status
 router.get('/sellers', async (req, res) => {
   try {
-    const { status, verified, search, limit = 50, offset = 0 } = req.query;
-    
+    const { status, verified, search, limit = 50, offset = 0, dedupe = 'true' } = req.query;
+
+    const dedupeEnabled = String(dedupe).toLowerCase() !== 'false';
+
     let query = `
-      SELECT 
+      WITH ranked_sellers AS (
+        SELECT
+          s.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE
+              WHEN COALESCE(NULLIF(TRIM(s.email), ''), '') <> '' THEN LOWER(TRIM(s.email))
+              WHEN COALESCE(NULLIF(TRIM(s.shop_name), ''), '') <> '' THEN LOWER(TRIM(s.shop_name))
+              ELSE CONCAT('id:', s.id::text)
+            END
+            ORDER BY s.created_at DESC, s.id DESC
+          ) AS row_rank
+        FROM sellers s
+      )
+      SELECT
         s.id,
         s.name,
         s.email,
@@ -27,13 +42,17 @@ router.get('/sellers', async (req, res) => {
         s.last_login,
         (SELECT COUNT(*) FROM products WHERE seller_id = s.id) as product_count,
         (SELECT COUNT(*) FROM products WHERE seller_id = s.id AND is_available = TRUE) as active_products
-      FROM sellers s
+      FROM ranked_sellers s
       WHERE 1=1
     `;
     
     const params = [];
     let paramIndex = 1;
     
+    if (dedupeEnabled) {
+      query += ` AND s.row_rank = 1`;
+    }
+
     // Filter by verification status
     if (verified === 'true') {
       query += ` AND s.is_verified = TRUE`;
@@ -61,8 +80,27 @@ router.get('/sellers', async (req, res) => {
     const sellers = await db.all(query, params);
     
     // Get total count
-    let countQuery = 'SELECT COUNT(*) as total FROM sellers WHERE 1=1';
+    let countQuery = `
+      WITH ranked_sellers AS (
+        SELECT
+          s.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE
+              WHEN COALESCE(NULLIF(TRIM(s.email), ''), '') <> '' THEN LOWER(TRIM(s.email))
+              WHEN COALESCE(NULLIF(TRIM(s.shop_name), ''), '') <> '' THEN LOWER(TRIM(s.shop_name))
+              ELSE CONCAT('id:', s.id::text)
+            END
+            ORDER BY s.created_at DESC, s.id DESC
+          ) AS row_rank
+        FROM sellers s
+      )
+      SELECT COUNT(*) as total FROM ranked_sellers WHERE 1=1
+    `;
     const countParams = [];
+
+    if (dedupeEnabled) {
+      countQuery += ' AND row_rank = 1';
+    }
     
     if (verified === 'true') {
       countQuery += ' AND is_verified = TRUE';
@@ -285,6 +323,19 @@ router.patch('/sellers/:id', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const stats = await db.get(`
+      WITH ranked_sellers AS (
+        SELECT
+          s.*,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE
+              WHEN COALESCE(NULLIF(TRIM(s.email), ''), '') <> '' THEN LOWER(TRIM(s.email))
+              WHEN COALESCE(NULLIF(TRIM(s.shop_name), ''), '') <> '' THEN LOWER(TRIM(s.shop_name))
+              ELSE CONCAT('id:', s.id::text)
+            END
+            ORDER BY s.created_at DESC, s.id DESC
+          ) AS row_rank
+        FROM sellers s
+      )
       SELECT 
         COUNT(*) as total_sellers,
         COUNT(CASE WHEN is_verified = TRUE THEN 1 END) as verified_sellers,
@@ -294,7 +345,8 @@ router.get('/stats', async (req, res) => {
         COUNT(CASE WHEN trust_level >= 4 THEN 1 END) as high_trust_sellers,
         COUNT(CASE WHEN is_verified = TRUE AND trust_level >= 4 THEN 1 END) as featured_eligible,
         AVG(trust_level) as avg_trust_level
-      FROM sellers
+      FROM ranked_sellers
+      WHERE row_rank = 1
     `);
     
     res.json(stats);

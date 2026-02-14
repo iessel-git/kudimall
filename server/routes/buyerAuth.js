@@ -3,9 +3,9 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const db = require('../models/database');
 const logger = require('../utils/logger');
+const { sendMailWithFallback, getFrontendBaseUrl } = require('../utils/emailConfig');
 
 // Validate JWT_SECRET is set (critical security requirement)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -16,32 +16,7 @@ if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
 }
 
 const JWT_EXPIRY = '30d'; // 30 days for buyers
-const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
-  .split(',')[0]
-  .trim() || 'http://localhost:3000';
-
-// Email transporter configuration
-const createEmailTransporter = () => {
-  if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      }
-    });
-  }
-  
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.example.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD
-    }
-  });
-};
+const FRONTEND_BASE_URL = getFrontendBaseUrl();
 
 // Middleware to authenticate buyer token
 const authenticateBuyerToken = (req, res, next) => {
@@ -318,7 +293,6 @@ router.post('/forgot-password', async (req, res) => {
 
     // Send password reset email
     try {
-      const transporter = createEmailTransporter();
       const resetUrl = `${FRONTEND_BASE_URL}/buyer/reset-password?token=${resetToken}`;
       
       const mailOptions = {
@@ -372,7 +346,7 @@ router.post('/forgot-password', async (req, res) => {
         `
       };
 
-      await transporter.sendMail(mailOptions);
+      await sendMailWithFallback(mailOptions);
       console.log('✓ Password reset email sent to:', buyer.email);
     } catch (emailError) {
       console.error('Email sending error:', emailError);
@@ -426,7 +400,6 @@ router.post('/reset-password', async (req, res) => {
 
     // Send confirmation email
     try {
-      const transporter = createEmailTransporter();
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: buyer.email,
@@ -470,7 +443,7 @@ router.post('/reset-password', async (req, res) => {
         `
       };
 
-      await transporter.sendMail(mailOptions);
+      await sendMailWithFallback(mailOptions);
       console.log('✓ Password reset confirmation email sent to:', buyer.email);
     } catch (emailError) {
       console.error('Confirmation email error:', emailError);

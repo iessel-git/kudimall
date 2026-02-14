@@ -3,9 +3,9 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const db = require('../models/database');
 const logger = require('../utils/logger');
+const { sendMailWithFallback, getFrontendBaseUrl } = require('../utils/emailConfig');
 
 // Validate JWT_SECRET is set (critical security requirement)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -15,9 +15,7 @@ if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
   process.exit(1);
 }
 
-const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
-  .split(',')[0]
-  .trim() || 'http://localhost:3000';
+const FRONTEND_BASE_URL = getFrontendBaseUrl();
 
 // Error codes that are safe to expose to clients (don't reveal system configuration)
 // Configuration errors (EMAIL_NOT_CONFIGURED, EMAIL_PLACEHOLDER_VALUES) and 
@@ -34,36 +32,19 @@ const AUTH_ERROR_CODES = ['EMAIL_AUTH_FAILED'];
 // Error codes that indicate connection issues (grouped for easier maintenance)
 const CONNECTION_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_TIMEOUT'];
 
-// Email transporter configuration
-const createEmailTransporter = () => {
-  // Check if using Gmail (simple configuration)
-  if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-      }
-    });
+const EMAIL_SEND_TIMEOUT_MS = (() => {
+  const parsed = Number.parseInt((process.env.EMAIL_SEND_TIMEOUT_MS || '').trim(), 10);
+  if (!Number.isInteger(parsed) || parsed < 5000) {
+    return 30000;
   }
-  
-  // Custom domain SMTP configuration
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.example.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER || 'noreply@example.com',
-      pass: process.env.EMAIL_PASSWORD || 'your-password'
-    }
-  });
-};
+  return parsed;
+})();
 
 // Helper function to send verification email with timeout
 const sendVerificationEmail = async (email, name, token) => {
-  // Wrap email sending in a promise with timeout (10 seconds)
+  // Wrap email sending in a promise with timeout
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), 10000);
+    setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), EMAIL_SEND_TIMEOUT_MS);
   });
 
   const emailPromise = (async () => {
@@ -94,7 +75,6 @@ const sendVerificationEmail = async (email, name, token) => {
         };
       }
 
-      const transporter = createEmailTransporter();
       const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
       
       const mailOptions = {
@@ -154,7 +134,7 @@ const sendVerificationEmail = async (email, name, token) => {
         `
       };
       
-      await transporter.sendMail(mailOptions);
+      await sendMailWithFallback(mailOptions);
       console.log('✓ Verification email sent to:', email);
       return { success: true };
     } catch (error) {
@@ -743,9 +723,9 @@ router.post('/seller/resend-verification', async (req, res) => {
 
 // Helper function to send password reset email with timeout
 const sendPasswordResetEmail = async (email, name, token) => {
-  // Wrap email sending in a promise with timeout (10 seconds)
+  // Wrap email sending in a promise with timeout
   const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), 10000);
+    setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), EMAIL_SEND_TIMEOUT_MS);
   });
 
   const emailPromise = (async () => {
@@ -760,7 +740,6 @@ const sendPasswordResetEmail = async (email, name, token) => {
         };
       }
 
-      const transporter = createEmailTransporter();
       const resetUrl = `${FRONTEND_BASE_URL}/seller/reset-password?token=${token}`;
       
       const mailOptions = {
@@ -820,7 +799,7 @@ const sendPasswordResetEmail = async (email, name, token) => {
         `
       };
       
-      await transporter.sendMail(mailOptions);
+      await sendMailWithFallback(mailOptions);
       console.log('✓ Password reset email sent to:', email);
       return { success: true };
     } catch (error) {

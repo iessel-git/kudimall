@@ -1,39 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../models/database');
-
-// Configure email transporter
-const createTransporter = () => {
-  // Check if using Gmail (simple configuration)
-  if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com')) {
-    return nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER || 'your-email@gmail.com',
-        pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-      }
-    });
-  }
-  
-  // Custom domain SMTP configuration
-  return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.example.com',
-    port: parseInt(process.env.EMAIL_PORT || '587'),
-    secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
-    auth: {
-      user: process.env.EMAIL_USER || 'noreply@example.com',
-      pass: process.env.EMAIL_PASSWORD || 'your-password'
-    }
-  });
-};
+const { sendMailWithFallback, getFrontendBaseUrl } = require('../utils/emailConfig');
 
 // GET /api/seller-applications/info - Get information about seller applications API
 router.get('/info', (req, res) => {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  const baseUrl = frontendUrl.split(',')[0].trim();
+  const baseUrl = getFrontendBaseUrl();
   
   res.json({
     name: 'Seller Applications API',
@@ -273,7 +247,6 @@ router.post('/', async (req, res) => {
 
     // Send email (non-blocking - don't fail if email fails)
     try {
-      const transporter = createTransporter();
       const mailOptions = {
         from: process.env.EMAIL_USER || 'noreply@kudimall.com',
         to: 'csetechnologies6@gmail.com',
@@ -282,7 +255,7 @@ router.post('/', async (req, res) => {
         replyTo: formData.email
       };
 
-      await transporter.sendMail(mailOptions);
+      await sendMailWithFallback(mailOptions);
       console.log('✅ Email notification sent successfully');
     } catch (emailError) {
       // Log email error but don't fail the application submission
@@ -494,14 +467,12 @@ const createSellerAccountFromApplication = async (application) => {
     ]);
 
     // Send welcome email with credentials
-    const transporter = createTransporter();
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const baseUrl = frontendUrl.split(',')[0].trim();
+    const baseUrl = getFrontendBaseUrl();
     const loginUrl = `${baseUrl}/seller-login`;
     const verifyUrl = `${baseUrl}/seller/verify?token=${verificationToken}`;
 
     try {
-      await transporter.sendMail({
+      await sendMailWithFallback({
         from: process.env.EMAIL_USER || 'noreply@kudimall.com',
         to: application.email,
         subject: '🎉 Welcome to KudiMall - Your Seller Application Approved!',

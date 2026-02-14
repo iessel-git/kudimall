@@ -17,7 +17,11 @@ const seedDb = async () => {
     ];
     for (const cat of categories) {
       await db.run(
-        'INSERT INTO categories (name, description, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING',
+        `INSERT INTO categories (name, description, slug)
+         SELECT $1, $2, $3
+         WHERE NOT EXISTS (
+           SELECT 1 FROM categories WHERE slug = $3 OR LOWER(name) = LOWER($1)
+         )`,
         [cat.name, cat.description, cat.slug]
       );
     }
@@ -34,24 +38,51 @@ const seedDb = async () => {
 
     // Seed Seller (linked to Test Seller user)
     await db.run(
-      'INSERT INTO sellers (user_id, shop_name, address, is_verified) SELECT id, $1, $2, $3 FROM users WHERE email=$4 ON CONFLICT DO NOTHING',
+      `INSERT INTO sellers (user_id, shop_name, address, is_verified)
+       SELECT id, $1, $2, $3
+       FROM users
+       WHERE email = $4
+       AND NOT EXISTS (
+         SELECT 1 FROM sellers WHERE user_id = users.id OR email = $4 OR shop_name = $1
+       )`,
       ['Test Seller Shop', 'Accra, Ghana', true, 'seller@example.com']
     );
 
     // Seed Products (linked to Test Seller and categories)
     await db.run(
       `INSERT INTO products (seller_id, category_id, name, description, price, stock, image_url, is_available)
-       SELECT s.id, c.id, $1, $2, $3, $4, $5, $6 FROM sellers s, categories c WHERE s.shop_name=$7 AND c.name=$8 ON CONFLICT DO NOTHING`,
+       SELECT s.id, c.id, $1, $2, $3, $4, $5, $6
+       FROM sellers s, categories c
+       WHERE s.shop_name = $7
+         AND c.name = $8
+         AND NOT EXISTS (
+           SELECT 1 FROM products p
+           WHERE p.seller_id = s.id AND p.category_id = c.id AND LOWER(p.name) = LOWER($1)
+         )`,
       ['iPhone 14', 'Latest Apple iPhone', 1200.00, 10, 'https://example.com/iphone14.jpg', true, 'Test Seller Shop', 'Electronics']
     );
     await db.run(
       `INSERT INTO products (seller_id, category_id, name, description, price, stock, image_url, is_available)
-       SELECT s.id, c.id, $1, $2, $3, $4, $5, $6 FROM sellers s, categories c WHERE s.shop_name=$7 AND c.name=$8 ON CONFLICT DO NOTHING`,
+       SELECT s.id, c.id, $1, $2, $3, $4, $5, $6
+       FROM sellers s, categories c
+       WHERE s.shop_name = $7
+         AND c.name = $8
+         AND NOT EXISTS (
+           SELECT 1 FROM products p
+           WHERE p.seller_id = s.id AND p.category_id = c.id AND LOWER(p.name) = LOWER($1)
+         )`,
       ['Men T-Shirt', '100% Cotton T-Shirt', 25.00, 50, 'https://example.com/tshirt.jpg', true, 'Test Seller Shop', 'Fashion']
     );
     await db.run(
       `INSERT INTO products (seller_id, category_id, name, description, price, stock, image_url, is_available)
-       SELECT s.id, c.id, $1, $2, $3, $4, $5, $6 FROM sellers s, categories c WHERE s.shop_name=$7 AND c.name=$8 ON CONFLICT DO NOTHING`,
+       SELECT s.id, c.id, $1, $2, $3, $4, $5, $6
+       FROM sellers s, categories c
+       WHERE s.shop_name = $7
+         AND c.name = $8
+         AND NOT EXISTS (
+           SELECT 1 FROM products p
+           WHERE p.seller_id = s.id AND p.category_id = c.id AND LOWER(p.name) = LOWER($1)
+         )`,
       ['Rice 5kg', 'Premium Jasmine Rice', 40.00, 100, 'https://example.com/rice.jpg', true, 'Test Seller Shop', 'Groceries']
     );
 

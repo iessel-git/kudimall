@@ -6,6 +6,7 @@ const fs = require('fs');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { createEmailTransporter, getFrontendBaseUrl, getSmtpConfig } = require('./utils/emailConfig');
 
 const serverEnvPath = path.join(__dirname, '.env');
 if (fs.existsSync(serverEnvPath)) {
@@ -394,6 +395,46 @@ app.post('/api/fix-seller-slugs', async (req, res) => {
     console.error('Slug fix error:', error);
     res.status(500).json({ 
       status: 'error', 
+      message: error.message
+    });
+  }
+});
+
+// Cleanup duplicate seed records (categories/sellers/products/users)
+app.post('/api/cleanup-seed-duplicates', async (req, res) => {
+  try {
+    const cleanupSeedDuplicates = require('./scripts/cleanupSeedDuplicates');
+    const summary = await cleanupSeedDuplicates();
+
+    res.json({
+      status: 'success',
+      message: 'Seed duplicate cleanup completed successfully',
+      summary
+    });
+  } catch (error) {
+    console.error('Seed duplicate cleanup error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message
+    });
+  }
+});
+
+// Purge all known seeded test/sample records
+app.post('/api/purge-seed-data', async (req, res) => {
+  try {
+    const purgeSeedData = require('./scripts/purgeSeedData');
+    const summary = await purgeSeedData();
+
+    res.json({
+      status: 'success',
+      message: 'Seed data purged successfully',
+      summary
+    });
+  } catch (error) {
+    console.error('Seed purge error:', error);
+    res.status(500).json({
+      status: 'error',
       message: error.message
     });
   }
@@ -797,6 +838,8 @@ app.get('/api/debug/email-config', async (req, res) => {
       process.env.EMAIL_PASSWORD === 'your-16-character-app-password';
     
     const frontendUrl = process.env.FRONTEND_URL || 'NOT_SET';
+    const resolvedFrontendUrl = getFrontendBaseUrl();
+    const smtpConfig = getSmtpConfig();
     
     res.json({
       status: 'success',
@@ -807,6 +850,12 @@ app.get('/api/debug/email-config', async (req, res) => {
         isGmail,
         isPlaceholder,
         frontendUrl,
+        resolvedFrontendUrl,
+        smtp: {
+          host: smtpConfig.host,
+          port: smtpConfig.port,
+          secure: smtpConfig.secure
+        },
         environment: process.env.NODE_ENV || 'development'
       },
       diagnosis: hasEmailUser && hasEmailPassword && !isPlaceholder ? 
@@ -825,7 +874,6 @@ app.get('/api/debug/email-config', async (req, res) => {
 // Test email sending
 app.post('/api/debug/test-email', async (req, res) => {
   try {
-    const nodemailer = require('nodemailer');
     const { to } = req.body;
     
     if (!to) {
@@ -835,31 +883,9 @@ app.post('/api/debug/test-email', async (req, res) => {
       });
     }
     
-    // Create transporter based on configuration
-    let transporter;
-    let transporterConfig = {};
-    
-    if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com')) {
-      transporterConfig = {
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      };
-      transporter = nodemailer.createTransport(transporterConfig);
-    } else {
-      transporterConfig = {
-        host: process.env.EMAIL_HOST || 'smtp.example.com',
-        port: parseInt(process.env.EMAIL_PORT || '587'),
-        secure: process.env.EMAIL_SECURE === 'true',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      };
-      transporter = nodemailer.createTransport(transporterConfig);
-    }
+    const transporter = createEmailTransporter();
+    const smtpConfig = getSmtpConfig();
+    const isGmail = !!(process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com'));
     
     // Try to send test email
     const mailOptions = {
@@ -876,10 +902,10 @@ app.post('/api/debug/test-email', async (req, res) => {
         message: 'Test email sent successfully',
         messageId: info.messageId,
         config: {
-          isGmail: process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com'),
-          host: transporterConfig.host || 'gmail',
-          port: transporterConfig.port || 'default',
-          secure: transporterConfig.secure || false,
+          isGmail,
+          host: isGmail ? 'gmail' : smtpConfig.host,
+          port: isGmail ? 'default' : smtpConfig.port,
+          secure: isGmail ? 'managed-by-gmail' : smtpConfig.secure,
           from: process.env.EMAIL_USER
         }
       });
@@ -891,10 +917,10 @@ app.post('/api/debug/test-email', async (req, res) => {
         code: sendError.code,
         command: sendError.command,
         config: {
-          isGmail: process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com'),
-          host: transporterConfig.host || 'gmail',
-          port: transporterConfig.port || 'default',
-          secure: transporterConfig.secure || false,
+          isGmail,
+          host: isGmail ? 'gmail' : smtpConfig.host,
+          port: isGmail ? 'default' : smtpConfig.port,
+          secure: isGmail ? 'managed-by-gmail' : smtpConfig.secure,
           hasHost: !!process.env.EMAIL_HOST,
           hasPort: !!process.env.EMAIL_PORT,
           hasSecure: !!process.env.EMAIL_SECURE
@@ -955,16 +981,22 @@ app.listen(PORT, async () => {
       console.log('✓ Database schema is up to date');
     }
     
-    // Auto-seed database if empty (for free tier deployment)
-    const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
-    
-    if (categories && categories[0] && categories[0].count === 0) {
-      console.log('🌱 Database appears empty, auto-seeding...');
-      const seedDb = require('./scripts/seedDb');
-      await seedDb();
-      console.log('✅ Database auto-seeded successfully');
+    // Auto-seed database only when explicitly enabled
+    const autoSeedEnabled = String(process.env.AUTO_SEED_ON_START || '').toLowerCase() === 'true';
+    if (autoSeedEnabled) {
+      const categories = await db.all('SELECT COUNT(*) as count FROM categories LIMIT 1');
+      const categoryCount = Number(categories?.[0]?.count || 0);
+
+      if (categoryCount === 0) {
+        console.log('🌱 Database appears empty, auto-seeding...');
+        const seedDb = require('./scripts/seedDb');
+        await seedDb();
+        console.log('✅ Database auto-seeded successfully');
+      } else {
+        console.log('📊 Database already contains data, skipping seed');
+      }
     } else {
-      console.log('📊 Database already contains data, skipping seed');
+      console.log('⏭️ Auto-seed disabled (set AUTO_SEED_ON_START=true to enable)');
     }
   } catch (error) {
     console.error('❌ Database initialization error:', error.message);

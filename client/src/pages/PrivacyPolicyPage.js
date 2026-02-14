@@ -41,7 +41,7 @@ const PrivacyPolicyPage = () => {
               <li>Usage data and analytics</li>
             </ul>
           </section>
-
+          
           <section className="legal-section">
             <h2>2. How We Use Your Information</h2>
             <ul>
