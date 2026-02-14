@@ -399,6 +399,106 @@ app.post('/api/fix-seller-slugs', async (req, res) => {
   }
 });
 
+// Setup homepage (categories, featured sellers, featured products)
+app.post('/api/setup-homepage', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // Generate slug function
+    const generateSlug = (text) => {
+      return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+    };
+    
+    const results = {
+      categories: { updated: 0, errors: [] },
+      sellers: { updated: 0, errors: [] },
+      products: { updated: 0, errors: [] }
+    };
+    
+    // 1. Fix categories - add slugs and remove duplicates
+    const categories = await db.all('SELECT id, name FROM categories');
+    const uniqueCategories = new Map();
+    
+    for (const cat of categories) {
+      const key = cat.name.toLowerCase().trim();
+      if (!uniqueCategories.has(key)) {
+        uniqueCategories.set(key, cat);
+      } else {
+        // Delete duplicate
+        try {
+          await db.run('DELETE FROM categories WHERE id = $1', [cat.id]);
+        } catch (err) {
+          results.categories.errors.push(`Failed to delete duplicate category ${cat.id}: ${err.message}`);
+        }
+      }
+    }
+    
+    // Add slugs to remaining categories
+    for (const [catName, cat] of uniqueCategories) {
+      try {
+        const slug = generateSlug(cat.name);
+        await db.run('UPDATE categories SET slug = $1 WHERE id = $2', [slug, cat.id]);
+        results.categories.updated++;
+      } catch (err) {
+        results.categories.errors.push(`Failed to update category ${cat.id}: ${err.message}`);
+      }
+    }
+    
+    // 2. Mark top sellers as featured (high trust level + verified)
+    try {
+      const topSellers = await db.all(`
+        SELECT id FROM sellers 
+        WHERE is_verified = TRUE 
+        ORDER BY trust_level DESC, total_sales DESC 
+        LIMIT 10
+      `);
+      
+      for (const seller of topSellers) {
+        await db.run('UPDATE sellers SET trust_level = 5 WHERE id = $1', [seller.id]);
+        results.sellers.updated++;
+      }
+    } catch (err) {
+      results.sellers.errors.push(`Failed to mark sellers as featured: ${err.message}`);
+    }
+    
+    // 3. Mark some products as featured
+    try {
+      const products = await db.all(`
+        SELECT p.id 
+        FROM products p
+        JOIN sellers s ON p.seller_id = s.id
+        WHERE s.is_verified = TRUE AND p.is_available = TRUE
+        ORDER BY RANDOM()
+        LIMIT 12
+      `);
+      
+      for (const product of products) {
+        await db.run('UPDATE products SET is_featured = TRUE WHERE id = $1', [product.id]);
+        results.products.updated++;
+      }
+    } catch (err) {
+      results.products.errors.push(`Failed to mark products as featured: ${err.message}`);
+    }
+    
+    res.json({ 
+      status: 'success', 
+      message: 'Homepage setup completed!',
+      results
+    });
+  } catch (error) {
+    console.error('Homepage setup error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
