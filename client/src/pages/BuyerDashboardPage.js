@@ -411,7 +411,8 @@ const BuyerDashboardPage = () => {
                       </p>
                       {order.delivery_proof_url && (
                         <div className="delivery-proof">
-                          <p><strong>Delivery Photo:</strong></p>
+                          <p><strong>📸 Delivery Photo:</strong></p>
+                          <p className="delivery-note">Uploaded by delivery driver - please review and confirm</p>
                           <img
                             src={`${getUploadsBaseUrl()}${order.delivery_proof_url}`}
                             alt="Delivery proof"
@@ -433,12 +434,13 @@ const BuyerDashboardPage = () => {
                   </div>
 
                   <div className="order-actions">
-                    {(order.status === 'shipped' || order.status === 'delivered') && (
+                    {(order.status === 'shipped' || order.status === 'delivered') && !order.buyer_confirmed_at && (
                       <button 
                         onClick={() => openSignatureModal(order)}
-                        className="btn-primary"
+                        className={`btn-primary ${order.delivery_proof_url ? 'highlight-action' : ''}`}
+                        title={order.delivery_proof_url ? 'Delivery proof available - please confirm' : 'Confirm delivery when received'}
                       >
-                        Confirm Delivery
+                        {order.delivery_proof_url ? '✅ Confirm Delivery (Proof Available)' : 'Confirm Delivery'}
                       </button>
                     )}
                     {(order.status === 'pending' || order.status === 'shipped') && (

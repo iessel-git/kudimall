@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     const params = [];
     
     if (featured === 'true') {
-      query += ' AND is_verified = 1 AND trust_level >= 4';
+      query += ' AND is_verified = TRUE AND trust_level >= 4';
     }
     
     query += ' ORDER BY trust_level DESC, total_sales DESC LIMIT $1 OFFSET $2';
@@ -62,7 +62,7 @@ router.get('/:slug/products', async (req, res) => {
       `SELECT p.*, c.name as category_name
        FROM products p
        JOIN categories c ON p.category_id = c.id
-      WHERE p.seller_id = $1 AND p.is_available = 1
+      WHERE p.seller_id = $1 AND p.is_available = TRUE
        ORDER BY p.created_at DESC
       LIMIT $2 OFFSET $3`,
       [seller.id, parseInt(limit), offset]

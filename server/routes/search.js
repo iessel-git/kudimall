@@ -24,8 +24,13 @@ router.get('/', async (req, res) => {
     if (type === 'all' || type === 'products') {
       try {
         results.products = await db.all(
-          `SELECT p.*, s.name as seller_name, s.trust_level, s.is_verified,
-                  c.name as category_name
+          `SELECT p.*, 
+                  COALESCE(s.name, s.shop_name) as seller_name, 
+                  s.slug as seller_slug,
+                  s.trust_level, 
+                  s.is_verified,
+                  c.name as category_name,
+                  c.slug as category_slug
            FROM products p
            JOIN sellers s ON p.seller_id = s.id
            JOIN categories c ON p.category_id = c.id
@@ -45,11 +50,20 @@ router.get('/', async (req, res) => {
     if (type === 'all' || type === 'sellers') {
       try {
         results.sellers = await db.all(
-          `SELECT * FROM sellers 
-           WHERE name ILIKE $1 OR description ILIKE $2
+          `SELECT id, 
+                  COALESCE(name, shop_name) as name, 
+                  shop_name,
+                  slug,
+                  description, 
+                  trust_level, 
+                  total_sales,
+                  is_verified,
+                  logo_url
+           FROM sellers 
+           WHERE (name ILIKE $1 OR shop_name ILIKE $2 OR description ILIKE $3)
            ORDER BY trust_level DESC, total_sales DESC
-           LIMIT $3 OFFSET $4`,
-          [searchTerm, searchTerm, parseInt(limit), offset]
+           LIMIT $4 OFFSET $5`,
+          [searchTerm, searchTerm, searchTerm, parseInt(limit), offset]
         );
       } catch (sellerError) {
         console.error('Error searching sellers:', sellerError);

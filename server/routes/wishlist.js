@@ -2,8 +2,15 @@ const express = require('express');
 const router = express.Router();
 const db = require('../models/database');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kudimall_buyer_secret_key_2024';
+// Validate JWT_SECRET is set (critical security requirement)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  logger.error('FATAL: JWT_SECRET environment variable is not set. This is required for security.');
+  logger.error('Please set JWT_SECRET in your .env file to a strong random string (minimum 32 characters).');
+  process.exit(1);
+}
 
 // Optional authentication middleware
 const optionalAuth = (req, res, next) => {

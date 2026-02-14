@@ -63,6 +63,29 @@ router.get('/orders', authenticateDeliveryToken, async (req, res) => {
   }
 });
 
+// GET /api/delivery/available-orders - Get available orders that can be claimed
+router.get('/available-orders', authenticateDeliveryToken, async (req, res) => {
+  try {
+    const query = `
+      SELECT o.*, p.name as product_name, p.image_url as product_image,
+             s.name as seller_name, s.phone as seller_phone
+      FROM orders o
+      LEFT JOIN products p ON o.product_id = p.id
+      LEFT JOIN sellers s ON o.seller_id = s.id
+      WHERE o.status = 'shipped' AND o.delivery_person_id IS NULL
+      ORDER BY o.created_at DESC
+      LIMIT 50
+    `;
+
+    const orders = await db.all(query);
+
+    res.json({ success: true, orders });
+  } catch (error) {
+    console.error('Error fetching available orders:', error);
+    res.status(500).json({ error: 'Failed to fetch available orders' });
+  }
+});
+
 // POST /api/delivery/orders/:orderNumber/claim - Claim an order for delivery
 router.post('/orders/:orderNumber/claim', authenticateDeliveryToken, async (req, res) => {
   try {

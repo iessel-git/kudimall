@@ -138,6 +138,32 @@ export const uploadDeliveryProofPhoto = (orderNumber, formData) => {
   });
 };
 
+// Seller Flash Deals Management
+export const getMyDeals = () => {
+  const token = localStorage.getItem('seller_token');
+  return api.get('/seller/deals', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+export const createDeal = (data) => {
+  const token = localStorage.getItem('seller_token');
+  return api.post('/seller/deals', data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+export const updateDeal = (id, data) => {
+  const token = localStorage.getItem('seller_token');
+  return api.put(`/seller/deals/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+export const deleteDeal = (id) => {
+  const token = localStorage.getItem('seller_token');
+  return api.delete(`/seller/deals/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
 // Buyer Authentication
 export const buyerSignup = (data) => api.post('/buyer-auth/signup', data);
 export const buyerLogin = (data) => api.post('/buyer-auth/login', data);
@@ -212,6 +238,12 @@ export const getDeliveryOrders = (params) => {
     headers: { Authorization: `Bearer ${token}` }
   });
 };
+export const getAvailableDeliveryOrders = () => {
+  const token = localStorage.getItem('delivery_token');
+  return api.get('/delivery/available-orders', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
 export const claimDeliveryOrder = (orderNumber) => {
   const token = localStorage.getItem('delivery_token');
   return api.post(`/delivery/orders/${orderNumber}/claim`, {}, {
@@ -276,39 +308,49 @@ export const getCart = () => {
   });
 };
 
-export const addToCart = (productId, quantity = 1) => {
+export const addToCart = async (productId, quantity = 1) => {
   const token = localStorage.getItem('buyer_token');
-  return api.post('/cart/add', { product_id: productId, quantity }, {
+  const response = await api.post('/cart/add', { product_id: productId, quantity }, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  window.dispatchEvent(new CustomEvent('cartUpdated'));
+  return response;
 };
 
-export const updateCartItem = (itemId, quantity) => {
+export const updateCartItem = async (itemId, quantity) => {
   const token = localStorage.getItem('buyer_token');
-  return api.put(`/cart/update/${itemId}`, { quantity }, {
+  const response = await api.put(`/cart/${itemId}`, { quantity }, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  window.dispatchEvent(new CustomEvent('cartUpdated'));
+  return response;
 };
 
-export const removeFromCart = (itemId) => {
+export const removeFromCart = async (itemId) => {
   const token = localStorage.getItem('buyer_token');
-  return api.delete(`/cart/remove/${itemId}`, {
+  const response = await api.delete(`/cart/${itemId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  window.dispatchEvent(new CustomEvent('cartUpdated'));
+  return response;
 };
 
-export const saveCartItemForLater = (itemId) => {
+export const saveCartItemForLater = async (itemId) => {
   const token = localStorage.getItem('buyer_token');
-  return api.post(`/cart/save-for-later/${itemId}`, {}, {
+  const response = await api.post(`/cart/save-for-later/${itemId}`, {}, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  window.dispatchEvent(new CustomEvent('cartUpdated'));
+  return response;
 };
 
-export const moveCartItemToCart = (itemId) => {
+export const moveCartItemToCart = async (itemId) => {
   const token = localStorage.getItem('buyer_token');
-  return api.post(`/cart/move-to-cart/${itemId}`, {}, {
+  const response = await api.post(`/cart/move-to-cart/${itemId}`, {}, {
     headers: { Authorization: `Bearer ${token}` }
   });
+  window.dispatchEvent(new CustomEvent('cartUpdated'));
+  return response;
 };
 
 export const getCartCount = () => {
@@ -318,11 +360,13 @@ export const getCartCount = () => {
   });
 };
 
-export const clearCart = () => {
+export const clearCart = async () => {
   const token = localStorage.getItem('buyer_token');
-  return api.delete('/cart/clear', {
+  const response = await api.delete('/cart/clear', {
     headers: { Authorization: `Bearer ${token}` }
   });
+  window.dispatchEvent(new CustomEvent('cartUpdated'));
+  return response;
 };
 
 // ============================================================================
@@ -330,8 +374,47 @@ export const clearCart = () => {
 // ============================================================================
 export const getFlashDeals = (params) => api.get('/deals', { params });
 export const getTopDeals = (limit) => api.get('/deals/top', { params: { limit } });
+
+// ============================================================================
+// AMA CHATBOT
+// ============================================================================
+export const chatWithAma = (message, context = {}) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post('/ama/chat', 
+    { message, context },
+    token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+  );
+};
+
+export const getAmaInfo = () => {
+  return api.get('/ama/info');
+};
 export const getEndingSoonDeals = () => api.get('/deals/ending-soon');
 export const getUpcomingDeals = () => api.get('/deals/upcoming');
 export const getProductDeal = (productId) => api.get(`/deals/product/${productId}`);
+
+// ============================================================================
+// PAYSTACK PAYMENT
+// ============================================================================
+export const initializePayment = (data) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.post('/payment/initialize', data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const verifyPayment = (reference) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.get(`/payment/verify/${reference}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
+
+export const getPaymentStatus = (orderNumber) => {
+  const token = localStorage.getItem('buyer_token');
+  return api.get(`/payment/status/${orderNumber}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+};
 
 export default api;

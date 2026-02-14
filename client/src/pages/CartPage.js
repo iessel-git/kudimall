@@ -165,11 +165,11 @@ const CartPage = () => {
                           <div className="item-price">
                             {item.deal_price ? (
                               <>
-                                <span className="original-price">₵{item.unit_price}</span>
-                                <span className="deal-price">₵{item.deal_price}</span>
+                                <span className="original-price">₵{parseFloat(item.current_product_price).toLocaleString()}</span>
+                                <span className="deal-price">₵{parseFloat(item.deal_price).toLocaleString()}</span>
                               </>
                             ) : (
-                              <span className="current-price">₵{item.unit_price}</span>
+                              <span className="current-price">₵{parseFloat(item.current_product_price || item.unit_price).toLocaleString()}</span>
                             )}
                           </div>
                           
@@ -272,12 +272,24 @@ const CartPage = () => {
                     ) : (
                       <div className="placeholder-image">📷</div>
                     )}
+                    {item.deal_price && (
+                      <span className="deal-badge">🔥 {item.discount_percentage}% OFF</span>
+                    )}
                   </div>
                   <div className="item-details">
                     <Link to={`/product/${item.slug}`} className="item-name">
                       {item.name}
                     </Link>
-                    <div className="item-price">₵{item.unit_price}</div>
+                    <div className="item-price">
+                      {item.deal_price ? (
+                        <>
+                          <span className="original-price">₵{parseFloat(item.current_product_price).toLocaleString()}</span>
+                          <span className="deal-price">₵{parseFloat(item.deal_price).toLocaleString()}</span>
+                        </>
+                      ) : (
+                        <span>₵{parseFloat(item.current_product_price || item.unit_price).toLocaleString()}</span>
+                      )}
+                    </div>
                     <div className="saved-item-actions">
                       <button 
                         className="btn-move-to-cart"

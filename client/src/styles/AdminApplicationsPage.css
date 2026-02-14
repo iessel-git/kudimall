@@ -1,8 +1,8 @@
 .admin-applications-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 100%);
+  background: linear-gradient(135deg, #fafaf8 0%, #f5f3ed 100%);
   padding: 100px 0 50px;
-  color: #f6f1e6;
+  color: #2a2a2a;
 }
 
 .admin-header {
@@ -17,7 +17,7 @@
 }
 
 .admin-header .subtitle {
-  color: #b8b8b8;
+  color: #6a6a6a;
   font-size: 1.1rem;
 }
 
@@ -31,31 +31,36 @@
 
 .filters button {
   padding: 10px 20px;
-  background: rgba(200, 164, 90, 0.1);
-  border: 2px solid rgba(200, 164, 90, 0.3);
-  color: #c8a45a;
+  background: #ffffff;
+  border: 2px solid rgba(200, 164, 90, 0.5);
+  color: #4a4a4a;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .filters button:hover {
-  background: rgba(200, 164, 90, 0.2);
+  background: rgba(200, 164, 90, 0.1);
   border-color: #c8a45a;
+  box-shadow: 0 4px 12px rgba(200, 164, 90, 0.2);
 }
 
 .filters button.active {
   background: linear-gradient(120deg, #b08a3d 0%, #c8a45a 45%, #e6c980 100%);
   border-color: #e6c980;
-  color: #1a1d24;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(200, 164, 90, 0.3);
 }
 
 .applications-table {
-  background: rgba(27, 31, 42, 0.8);
+  background: #ffffff;
   border-radius: 12px;
   padding: 20px;
   overflow-x: auto;
+  border: 2px solid rgba(200, 164, 90, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .applications-table table {
@@ -64,21 +69,22 @@
 }
 
 .applications-table th {
-  background: rgba(200, 164, 90, 0.2);
-  color: #c8a45a;
+  background: linear-gradient(135deg, #c8a45a 0%, #d4b064 100%);
+  color: #ffffff;
   padding: 15px;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid rgba(200, 164, 90, 0.3);
+  border-bottom: 2px solid #c8a45a;
 }
 
 .applications-table td {
   padding: 15px;
-  border-bottom: 1px solid rgba(200, 164, 90, 0.1);
+  border-bottom: 1px solid rgba(200, 164, 90, 0.15);
+  color: #2a2a2a;
 }
 
 .applications-table tbody tr:hover {
-  background: rgba(200, 164, 90, 0.05);
+  background: rgba(200, 164, 90, 0.08);
 }
 
 .app-id {
@@ -144,7 +150,7 @@
 .no-results {
   text-align: center;
   padding: 60px 20px;
-  color: #b8b8b8;
+  color: #6a6a6a;
   font-size: 1.1rem;
 }
 
@@ -165,14 +171,14 @@
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #1b1f2a 0%, #2a2f3a 100%);
+  background: #ffffff;
   border-radius: 16px;
   border: 2px solid rgba(200, 164, 90, 0.3);
   max-width: 900px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
@@ -181,18 +187,18 @@
   align-items: center;
   padding: 25px 30px;
   border-bottom: 2px solid rgba(200, 164, 90, 0.3);
-  background: rgba(200, 164, 90, 0.1);
+  background: linear-gradient(135deg, #c8a45a 0%, #d4b064 100%);
 }
 
 .modal-header h2 {
-  color: #c8a45a;
+  color: #ffffff;
   margin: 0;
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #c8a45a;
+  color: #ffffff;
   font-size: 2rem;
   cursor: pointer;
   padding: 0;
@@ -206,7 +212,7 @@
 }
 
 .close-btn:hover {
-  background: rgba(200, 164, 90, 0.2);
+  background: rgba(255, 255, 255, 0.2);
   transform: rotate(90deg);
 }
 
@@ -217,7 +223,7 @@
 .detail-section {
   margin-bottom: 30px;
   padding: 20px;
-  background: rgba(15, 17, 21, 0.5);
+  background: linear-gradient(135deg, #faf9f6 0%, #f5f3ed 100%);
   border-radius: 10px;
   border: 1px solid rgba(200, 164, 90, 0.2);
 }
@@ -244,21 +250,22 @@
 }
 
 .detail-item strong {
-  color: #e6c980;
+  color: #c8a45a;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .detail-item span {
-  color: #d0d0d0;
+  color: #2a2a2a;
 }
 
 .admin-notes-input {
   width: 100%;
   padding: 15px;
-  background: rgba(15, 17, 21, 0.5);
+  background: #ffffff;
   border: 2px solid rgba(200, 164, 90, 0.3);
   border-radius: 8px;
-  color: #f6f1e6;
+  color: #2a2a2a;
   font-family: inherit;
   font-size: 1rem;
   resize: vertical;
@@ -267,7 +274,8 @@
 .admin-notes-input:focus {
   outline: none;
   border-color: #c8a45a;
-  background: rgba(15, 17, 21, 0.7);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(200, 164, 90, 0.1);
 }
 
 .modal-footer {
@@ -275,7 +283,7 @@
   gap: 10px;
   padding: 25px 30px;
   border-top: 2px solid rgba(200, 164, 90, 0.3);
-  background: rgba(200, 164, 90, 0.05);
+  background: linear-gradient(135deg, #faf9f6 0%, #f5f3ed 100%);
   flex-wrap: wrap;
 }
 
@@ -328,8 +336,8 @@
 
 .btn-cancel {
   padding: 12px 24px;
-  background: rgba(200, 164, 90, 0.1);
-  border: 2px solid rgba(200, 164, 90, 0.3);
+  background: #ffffff;
+  border: 2px solid rgba(200, 164, 90, 0.5);
   color: #c8a45a;
   border-radius: 8px;
   cursor: pointer;
@@ -341,7 +349,7 @@
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background: rgba(200, 164, 90, 0.2);
+  background: rgba(200, 164, 90, 0.1);
   border-color: #c8a45a;
 }
 

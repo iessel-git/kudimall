@@ -7,7 +7,7 @@ const TermsOfServicePage = () => {
       <div className="container">
         <div className="support-header">
           <h1>Terms of Service</h1>
-          <p>Last updated: February 7, 2026</p>
+          <p>Last updated: February 13, 2026</p>
         </div>
 
         <div className="legal-content">
@@ -50,7 +50,24 @@ const TermsOfServicePage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>4. Buyer Responsibilities</h2>
+            <h2>4. Refund and Return Policy</h2>
+            <p>
+              Buyers are entitled to refunds under the following conditions:
+            </p>
+            <ul>
+              <li><strong>Item not as described:</strong> Full refund if product differs significantly from listing</li>
+              <li><strong>Damaged or defective items:</strong> Full refund or replacement within 7 days of delivery</li>
+              <li><strong>Non-delivery:</strong> Full refund if item not received within specified timeframe</li>
+              <li><strong>Return window:</strong> 7 days from delivery confirmation for inspection</li>
+              <li><strong>Return shipping:</strong> Seller responsible for defective items; buyer responsible for preference-based returns (if seller accepts)</li>
+            </ul>
+            <p>
+              <strong>Refund Timeline:</strong> Approved refunds are processed to original payment method within 5-10 business days.
+            </p>
+          </section>
+
+          <section className="legal-section">
+            <h2>5. Buyer Responsibilities</h2>
             <ul>
               <li>Provide accurate shipping and contact information</li>
               <li>Review products upon receipt within specified timeframe</li>
@@ -95,24 +112,64 @@ const TermsOfServicePage = () => {
             <p>
               KudiMall acts as a platform connecting buyers and sellers. While we provide 
               escrow protection and verification systems, we are not responsible for the 
-              quality, safety, or legality of items listed or sold.
+              quality, safety, or legality of items listed or sold. KudiMall's liability 
+              is limited to the transaction value, and we are not liable for indirect, 
+              incidental, or consequential damages.
             </p>
           </section>
 
           <section className="legal-section">
-            <h2>9. Changes to Terms</h2>
+            <h2>10. Dispute Resolution and Governing Law</h2>
             <p>
-              We reserve the right to modify these terms at any time. Changes will be 
-              effective immediately upon posting. Your continued use of the service 
-              constitutes acceptance of modified terms.
+              <strong>Governing Law:</strong> These Terms shall be governed by and construed in 
+              accordance with the laws of the jurisdiction where KudiMall operates, without 
+              regard to its conflict of law provisions.
+            </p>
+            <p>
+              <strong>Dispute Resolution Process:</strong>
+            </p>
+            <ul>
+              <li><strong>Step 1 - Direct Resolution:</strong> Contact the other party to resolve the issue</li>
+              <li><strong>Step 2 - KudiMall Mediation:</strong> Submit dispute to our support team within 14 days</li>
+              <li><strong>Step 3 - Binding Decision:</strong> Our mediation team will review evidence and make a binding decision within 7 business days</li>
+              <li><strong>Step 4 - Arbitration:</strong> For disputes exceeding $5,000 USD, parties may pursue binding arbitration</li>
+            </ul>
+            <p>
+              <strong>Escrow Release:</strong> Funds remain in escrow during dispute resolution. Release 
+              is determined by mediation outcome or mutual agreement.
             </p>
           </section>
 
           <section className="legal-section">
-            <h2>10. Contact</h2>
+            <h2>11. Account Termination</h2>
             <p>
-              Questions about the Terms of Service should be sent to us at 
-              legal@kudimall.com.
+              We reserve the right to suspend or terminate accounts that violate these terms. 
+              Users may close their accounts at any time, subject to completion of pending 
+              transactions. Upon termination:
+            </p>
+            <ul>
+              <li>Pending transactions must be completed or refunded</li>
+              <li>Escrow funds will be released according to transaction status</li>
+              <li>Account data will be retained per our data retention policy</li>
+              <li>Access to the platform will be revoked immediately</li>
+            </ul>
+          </section>
+
+          <section className="legal-section">
+            <h2>12. Changes to Terms</h2>
+            <p>
+              We reserve the right to modify these terms at any time. Material changes will be 
+              notified via email at least 30 days before taking effect. Your continued use of 
+              the service after changes take effect constitutes acceptance of modified terms.
+            </p>
+          </section>
+
+          <section className="legal-section">
+            <h2>13. Contact</h2>
+            <p>
+              Questions about the Terms of Service should be sent to us at:<br />
+              Email: legal@kudimall.com<br />
+              Address: KudiMall Legal Department, 123 Commerce Avenue, Business District, Lagos, Nigeria
             </p>
           </section>
         </div>

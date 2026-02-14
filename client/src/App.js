@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import AmaChat from './components/AmaChat';
 import HomePage from './pages/HomePage';
 import CategoryPage from './pages/CategoryPage';
 import SellerStorePage from './pages/SellerStorePage';
@@ -27,11 +28,13 @@ import BuyerForgotPasswordPage from './pages/BuyerForgotPasswordPage';
 import BuyerResetPasswordPage from './pages/BuyerResetPasswordPage';
 import BuyerDashboardPage from './pages/BuyerDashboardPage';
 import AdminApplicationsPage from './pages/AdminApplicationsPage';
+import AdminSellersPage from './pages/AdminSellersPage';
 import ReceiptConfirmationPage from './pages/ReceiptConfirmationPage';
 import DeliveryLoginPage from './pages/DeliveryLoginPage';
 import DeliverySignupPage from './pages/DeliverySignupPage';
 import DeliveryDashboardPage from './pages/DeliveryDashboardPage';
 import CartPage from './pages/CartPage';
+import CartCheckoutPage from './pages/CartCheckoutPage';
 import WishlistPage from './pages/WishlistPage';
 import DealsPage from './pages/DealsPage';
 import './styles/App.css';
@@ -73,13 +76,16 @@ function App() {
             <Route path="/delivery/signup" element={<DeliverySignupPage />} />
             <Route path="/delivery/dashboard" element={<DeliveryDashboardPage />} />
             <Route path="/admin/applications" element={<AdminApplicationsPage />} />
+            <Route path="/admin/sellers" element={<AdminSellersPage />} />
             <Route path="/receipt-confirmation" element={<ReceiptConfirmationPage />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/cart-checkout" element={<CartCheckoutPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/deals" element={<DealsPage />} />
           </Routes>
         </main>
         <Footer />
+        <AmaChat />
       </div>
     </Router>
   );

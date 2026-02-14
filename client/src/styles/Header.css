@@ -110,7 +110,7 @@
   padding: 12px 16px;
   border: none;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 14px;
   background: transparent;
   color: #1a1a1a;
 }
@@ -265,7 +265,7 @@
   }
 
   .search-input {
-    font-size: 14px;
+    font-size: 13px;
     padding: 10px 8px;
     min-width: 0;
     flex: 1;
@@ -276,7 +276,7 @@
   }
 
   .search-input::placeholder {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .search-button {

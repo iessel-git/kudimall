@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const fs = require('fs');
 const dotenv = require('dotenv');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const serverEnvPath = path.join(__dirname, '.env');
 if (fs.existsSync(serverEnvPath)) {
@@ -14,6 +16,9 @@ if (fs.existsSync(serverEnvPath)) {
   }
   dotenv.config();
 }
+
+// Initialize logger after dotenv config
+const logger = require('./utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +60,12 @@ const isOriginAllowed = (origin) => {
   });
 };
 
+// Security: Add helmet for security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for now to avoid breaking existing functionality
+  crossOriginEmbedderPolicy: false
+}));
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -66,6 +77,16 @@ app.use(
     credentials: true,
   })
 );
+
+// Security: Rate limiting for authentication endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 requests per windowMs
+  message: 'Too many login attempts from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(bodyParser.json({ limit: '5mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '5mb' }));
 
@@ -85,6 +106,7 @@ const searchRoutes = require('./routes/search');
 const reviewRoutes = require('./routes/reviews');
 const orderRoutes = require('./routes/orders');
 const sellerApplicationRoutes = require('./routes/sellerApplications');
+const adminSellerVerificationRoutes = require('./routes/adminSellerVerification');
 const { router: authRoutes } = require('./routes/auth');
 const sellerManagementRoutes = require('./routes/sellerManagement');
 const { router: buyerAuthRoutes } = require('./routes/buyerAuth');
@@ -94,6 +116,9 @@ const deliveryManagementRoutes = require('./routes/deliveryManagement');
 const wishlistRoutes = require('./routes/wishlist');
 const cartRoutes = require('./routes/cart');
 const dealsRoutes = require('./routes/deals');
+const amaRoutes = require('./routes/ama');
+const paymentRoutes = require('./routes/payment');
+const paystackWebhookRoutes = require('./routes/paystackWebhook');
 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/sellers', sellerRoutes);
@@ -102,15 +127,25 @@ app.use('/api/search', searchRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/seller-applications', sellerApplicationRoutes);
+app.use('/api/admin', adminSellerVerificationRoutes);
+// Apply rate limiting to authentication endpoints
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/seller', sellerManagementRoutes);
+app.use('/api/buyer-auth/login', authLimiter);
+app.use('/api/buyer-auth/signup', authLimiter);
 app.use('/api/buyer-auth', buyerAuthRoutes);
 app.use('/api/buyer', buyerManagementRoutes);
+app.use('/api/delivery-auth/login', authLimiter);
 app.use('/api/delivery-auth', deliveryAuthRoutes);
 app.use('/api/delivery', deliveryManagementRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/deals', dealsRoutes);
+app.use('/api/ama', amaRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/webhooks/paystack', paystackWebhookRoutes);
 
 // Root route - API information
 app.get('/', (req, res) => {
@@ -143,6 +178,11 @@ app.get('/', (req, res) => {
         apiEndpoint: '/api/seller-applications',
         adminPage: '/admin/applications',
         description: 'Manage seller applications - view, approve, or reject applications'
+      },
+      'seller-verification': {
+        apiEndpoint: '/api/admin/sellers',
+        adminPage: '/admin/sellers',
+        description: 'Manage seller verification status, trust levels, and badges'
       }
     }
   });

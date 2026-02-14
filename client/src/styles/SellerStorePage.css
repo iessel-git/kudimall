@@ -3,10 +3,12 @@
 }
 
 .store-banner {
-  background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 60%, #3a2e1c 100%);
-  color: #f6f1e6;
+  background: linear-gradient(135deg, #ffffff 0%, #faf9f6 60%, #f5f3ed 100%);
+  color: #2a2a2a;
   padding: 60px 0;
   margin-bottom: 40px;
+  border-bottom: 3px solid rgba(200, 164, 90, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .store-header {
@@ -18,14 +20,16 @@
 
 .store-logo {
   font-size: 80px;
-  background: #fff;
+  background: linear-gradient(135deg, #c8a45a 0%, #d4b064 100%);
+  color: #ffffff;
   border-radius: 50%;
   width: 120px;
   height: 120px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 18px 30px rgba(15, 17, 21, 0.2);
+  box-shadow: 0 8px 24px rgba(200, 164, 90, 0.3);
+  border: 3px solid #ffffff;
 }
 
 .store-info {
@@ -35,6 +39,7 @@
 .store-info h1 {
   font-size: 36px;
   margin-bottom: 10px;
+  color: #2a2a2a;
 }
 
 .verified-badge {
@@ -53,7 +58,7 @@
 }
 
 .store-location {
-  font-size: 16px;
+  color: rgba(42, 42, 42, 0.8)6px;
   opacity: 0.9;
   margin-bottom: 10px;
 }
@@ -62,29 +67,29 @@
   display: flex;
   gap: 15px;
   font-size: 14px;
-  opacity: 0.9;
+  color: rgba(42, 42, 42, 0.8);
 }
 
 .follow-button {
-  background: linear-gradient(135deg, #c8a45a 0%, #e6c980 100%);
-  color: #1a1d24;
+  background: linear-gradient(135deg, #c8a45a 0%, #d4b064 100%);
+  color: #ffffff;
   padding: 12px 30px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 12px 24px rgba(200, 164, 90, 0.25);
+  box-shadow: 0 4px 12px rgba(200, 164, 90, 0.3);
 }
 
 .follow-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 30px rgba(15, 17, 21, 0.25);
+  box-shadow: 0 8px 20px rgba(200, 164, 90, 0.4);
 }
 
 .store-description {
   font-size: 16px;
   line-height: 1.6;
-  opacity: 0.9;
+  color: rgba(42, 42, 42, 0.9);
   max-width: 800px;
 }
 

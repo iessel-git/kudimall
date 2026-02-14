@@ -46,8 +46,13 @@ router.get('/:slug/products', async (req, res) => {
     }
     
     const products = await db.all(
-      `SELECT p.*, s.name as seller_name, s.trust_level, s.is_verified, 
-              c.name as category_name
+      `SELECT p.*, 
+              COALESCE(s.name, s.shop_name) as seller_name, 
+              s.slug as seller_slug,
+              s.trust_level, 
+              s.is_verified,
+              c.name as category_name,
+              c.slug as category_slug
        FROM products p
        JOIN sellers s ON p.seller_id = s.id
        JOIN categories c ON p.category_id = c.id

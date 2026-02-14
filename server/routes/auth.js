@@ -5,8 +5,16 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const db = require('../models/database');
+const logger = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kudimall-secret-key-change-in-production';
+// Validate JWT_SECRET is set (critical security requirement)
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
+  logger.error('FATAL: JWT_SECRET environment variable is not set. This is required for security.');
+  logger.error('Please set JWT_SECRET in your .env file to a strong random string (minimum 32 characters).');
+  process.exit(1);
+}
+
 const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
   .split(',')[0]
   .trim() || 'http://localhost:3000';

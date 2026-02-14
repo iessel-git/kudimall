@@ -34,6 +34,23 @@ const Header = () => {
     }
   }, [fetchCartCount]);
 
+  // Listen for cart updates
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      fetchCartCount();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, [fetchCartCount]);
+
+  // Refresh cart count on location change
+  useEffect(() => {
+    if (buyer) {
+      fetchCartCount();
+    }
+  }, [location.pathname, buyer, fetchCartCount]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {

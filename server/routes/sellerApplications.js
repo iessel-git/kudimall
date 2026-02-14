@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const db = require('../models/database');
 
 // Configure email transporter
@@ -424,6 +426,170 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Helper function to generate slug
+const generateSlug = (name) => {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+// Helper function to create seller account from approved application
+const createSellerAccountFromApplication = async (application) => {
+  try {
+    // Check if seller already exists with this email
+    const existingSeller = await db.get(
+      'SELECT id FROM sellers WHERE email = $1',
+      [application.email]
+    );
+
+    if (existingSeller) {
+      console.log(`⚠️ Seller account already exists for email: ${application.email}`);
+      return {
+        success: false,
+        message: 'Seller account already exists',
+        sellerId: existingSeller.id
+      };
+    }
+
+    // Generate temporary password (seller must reset on first login)
+    const tempPassword = crypto.randomBytes(8).toString('hex');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(tempPassword, salt);
+
+    // Generate unique slug from store name
+    let slug = generateSlug(application.store_name);
+    let slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
+    let counter = 1;
+    
+    while (slugExists) {
+      slug = `${generateSlug(application.store_name)}-${counter}`;
+      slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
+      counter++;
+    }
+
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+
+    // Create seller account
+    const fullName = `${application.first_name} ${application.last_name}`;
+    const result = await db.run(`
+      INSERT INTO sellers (
+        name, slug, email, password, phone, location, description, shop_name, 
+        is_active, is_verified, email_verified, trust_level,
+        email_verification_token, email_verification_expires
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, FALSE, 0, $9, $10)
+    `, [
+      fullName,
+      slug,
+      application.email,
+      hashedPassword,
+      application.phone,
+      `${application.city}, ${application.state}, ${application.country}`,
+      application.store_description,
+      application.store_name,
+      verificationToken,
+      verificationExpires.toISOString()
+    ]);
+
+    // Send welcome email with credentials
+    const transporter = createTransporter();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const baseUrl = frontendUrl.split(',')[0].trim();
+    const loginUrl = `${baseUrl}/seller-login`;
+    const verifyUrl = `${baseUrl}/seller/verify?token=${verificationToken}`;
+
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        to: application.email,
+        subject: '🎉 Welcome to KudiMall - Your Seller Application Approved!',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 100%); 
+                        color: #c8a45a; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f6f1e6; padding: 30px; border-radius: 0 0 8px 8px; }
+              .credentials { background: white; padding: 20px; margin: 20px 0; border-left: 4px solid #c8a45a; }
+              .button { display: inline-block; background: #c8a45a; color: white; 
+                        padding: 12px 30px; text-decoration: none; border-radius: 5px; 
+                        font-weight: bold; margin: 10px 5px; }
+              .warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🎉 Congratulations ${fullName}!</h1>
+                <p>Your seller application has been approved</p>
+              </div>
+              <div class="content">
+                <p>Welcome to the KudiMall marketplace! Your application for <strong>${application.store_name}</strong> has been approved.</p>
+                
+                <div class="credentials">
+                  <h3>🔐 Your Login Credentials</h3>
+                  <p><strong>Email:</strong> ${application.email}</p>
+                  <p><strong>Temporary Password:</strong> <code>${tempPassword}</code></p>
+                </div>
+
+                <div class="warning">
+                  <strong>⚠️ Important Security Steps:</strong>
+                  <ol>
+                    <li>Verify your email address by clicking the button below</li>
+                    <li>Login with your temporary password</li>
+                    <li>Change your password immediately after first login</li>
+                  </ol>
+                </div>
+
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${verifyUrl}" class="button">✉️ Verify Email</a>
+                  <a href="${loginUrl}" class="button">🚀 Login to Dashboard</a>
+                </div>
+
+                <h3>📋 Next Steps:</h3>
+                <ul>
+                  <li>✅ Verify your email address</li>
+                  <li>✅ Login and change your password</li>
+                  <li>✅ Complete your seller profile</li>
+                  <li>✅ Add your products</li>
+                  <li>✅ Start selling!</li>
+                </ul>
+
+                <p style="margin-top: 30px; font-size: 14px; color: #666;">
+                  If you have any questions, please contact our support team.
+                </p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      });
+      console.log(`✅ Welcome email sent to: ${application.email}`);
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send welcome email:', emailError.message);
+    }
+
+    return {
+      success: true,
+      message: 'Seller account created successfully',
+      sellerId: result.id,
+      tempPassword,
+      slug
+    };
+  } catch (error) {
+    console.error('Error creating seller account:', error);
+    return {
+      success: false,
+      message: error.message
+    };
+  }
+};
+
 // PATCH /api/seller-applications/:id - Update application status
 router.patch('/:id', async (req, res) => {
   try {
@@ -479,11 +645,25 @@ router.patch('/:id', async (req, res) => {
       'SELECT * FROM seller_applications WHERE id = $1',
       [application.id]
     );
+
+    // 🆕 AUTOMATED SELLER ACCOUNT CREATION
+    let sellerAccountResult = null;
+    if (status === 'approved' && application.status !== 'approved') {
+      console.log(`🔄 Application approved! Creating seller account for: ${application.email}`);
+      sellerAccountResult = await createSellerAccountFromApplication(application);
+      
+      if (sellerAccountResult.success) {
+        console.log(`✅ Seller account created! ID: ${sellerAccountResult.sellerId}, Slug: ${sellerAccountResult.slug}`);
+      } else {
+        console.warn(`⚠️ Could not create seller account: ${sellerAccountResult.message}`);
+      }
+    }
     
     res.json({
       success: true,
       message: 'Application updated successfully',
-      application: updatedApplication
+      application: updatedApplication,
+      sellerAccount: sellerAccountResult
     });
   } catch (error) {
     console.error('Error updating application:', error);

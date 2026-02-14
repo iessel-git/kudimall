@@ -309,8 +309,9 @@
 }
 
 .btn-add-to-cart:hover:not(:disabled) {
-  background: #2a2a2a;
+  background: linear-gradient(135deg, #f4c542 0%, #ffdb6b 100%);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 165, 70, 0.4);
 }
 
 .btn-add-to-cart:disabled {

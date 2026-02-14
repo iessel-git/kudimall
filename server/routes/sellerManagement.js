@@ -307,10 +307,8 @@ router.get('/stats', authenticateToken, async (req, res) => {
     const stats = await db.get(`
       SELECT 
         COUNT(*) as total_products,
-        SUM(CASE WHEN is_available = 1 THEN 1 ELSE 0 END) as active_products,
-        SUM(stock) as total_stock,
-        SUM(views) as total_views,
-        SUM(sales) as total_sales
+        SUM(CASE WHEN is_available = TRUE THEN 1 ELSE 0 END) as active_products,
+        COALESCE(SUM(stock), 0) as total_stock
       FROM products
       WHERE seller_id = $1
     `, [req.seller.id]);
@@ -432,54 +430,284 @@ router.patch('/orders/:orderNumber/status', authenticateToken, async (req, res) 
   }
 });
 
-// POST /api/seller/orders/:orderNumber/delivery-proof/photo - Upload delivery photo proof
-router.post('/orders/:orderNumber/delivery-proof/photo', authenticateToken, deliveryProofUpload.single('photo'), async (req, res) => {
+// POST /api/seller/orders/:orderNumber/delivery-proof/photo - DISABLED: Only delivery drivers can upload proof
+// This endpoint has been disabled to enforce the proper delivery flow:
+// Seller ships → Delivery driver uploads proof → Buyer confirms
+// Delivery drivers should use: POST /api/delivery/orders/:orderNumber/delivery-proof/photo
+router.post('/orders/:orderNumber/delivery-proof/photo', authenticateToken, async (req, res) => {
+  return res.status(403).json({ 
+    error: 'Sellers cannot upload delivery proof',
+    message: 'Only assigned delivery drivers can upload delivery proof. Please assign a delivery driver to complete this step.'
+  });
+});
+
+// ============================================================================
+// FLASH DEALS MANAGEMENT - Seller creates and manages their own deals
+// ============================================================================
+
+// GET /api/seller/deals - Get seller's flash deals
+router.get('/deals', authenticateToken, async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'Delivery photo is required' });
-    }
+    const deals = await db.all(`
+      SELECT fd.*, 
+             p.name as product_name, p.slug as product_slug, p.image_url,
+             EXTRACT(EPOCH FROM (fd.ends_at - NOW())) as seconds_remaining
+      FROM flash_deals fd
+      JOIN products p ON fd.product_id = p.id
+      WHERE fd.seller_id = $1
+      ORDER BY fd.created_at DESC
+    `, [req.seller.id]);
 
-    const order = await db.get(
-      'SELECT * FROM orders WHERE order_number = $1 AND seller_id = $2',
-      [req.params.orderNumber, req.seller.id]
-    );
+    res.json({ success: true, deals });
+  } catch (error) {
+    console.error('Error fetching seller deals:', error);
+    res.status(500).json({ error: 'Failed to fetch deals' });
+  }
+});
 
-    if (!order) {
-      return res.status(404).json({
-        error: 'Order not found',
-        message: 'Order not found or you do not have permission to update it'
+// POST /api/seller/deals - Create a new flash deal
+router.post('/deals', authenticateToken, async (req, res) => {
+  try {
+    const {
+      product_id,
+      original_price,
+      deal_price,
+      discount_percentage,
+      quantity_available,
+      starts_at,
+      ends_at
+    } = req.body;
+
+    // Validate required fields
+    if (!product_id || !original_price || !deal_price || !discount_percentage || !quantity_available || !starts_at || !ends_at) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        message: 'All deal fields are required'
       });
     }
 
-    const deliveredBy = req.body.delivered_by || 'delivery';
-    const proofUrl = `/uploads/delivery-proofs/${req.file.filename}`;
-    const proofType = order.delivery_signature_data ? 'photo+signature' : 'photo';
-
-    await db.run(
-      `UPDATE orders
-       SET status = 'delivered',
-         delivered_at = COALESCE(delivered_at, CURRENT_TIMESTAMP),
-         delivery_proof_type = $1,
-         delivery_proof_url = $2,
-         delivery_photo_uploaded_by = $3,
-         updated_at = CURRENT_TIMESTAMP
-       WHERE id = $4`,
-      [proofType, proofUrl, deliveredBy, order.id]
+    // Verify product belongs to seller
+    const product = await db.get(
+      'SELECT id, price, stock FROM products WHERE id = $1 AND seller_id = $2',
+      [product_id, req.seller.id]
     );
 
-    const updatedOrder = await db.get(
-      'SELECT * FROM orders WHERE id = $1',
-      [order.id]
-    );
+    if (!product) {
+      return res.status(404).json({
+        error: 'Product not found',
+        message: 'Product does not exist or does not belong to you'
+      });
+    }
+
+    // Validate deal price is less than original price
+    if (parseFloat(deal_price) >= parseFloat(original_price)) {
+      return res.status(400).json({
+        error: 'Invalid pricing',
+        message: 'Deal price must be less than original price'
+      });
+    }
+
+    // Validate quantity available doesn't exceed stock
+    if (parseInt(quantity_available) > product.stock) {
+      return res.status(400).json({
+        error: 'Invalid quantity',
+        message: `Quantity available (${quantity_available}) cannot exceed product stock (${product.stock})`
+      });
+    }
+
+    // Validate dates
+    const startDate = new Date(starts_at);
+    const endDate = new Date(ends_at);
+    
+    if (endDate <= startDate) {
+      return res.status(400).json({
+        error: 'Invalid dates',
+        message: 'End date must be after start date'
+      });
+    }
+
+    // Check for overlapping deals on the same product
+    const overlapping = await db.get(`
+      SELECT id FROM flash_deals 
+      WHERE product_id = $1 
+        AND is_active = true
+        AND (
+          (starts_at <= $2 AND ends_at >= $2) OR
+          (starts_at <= $3 AND ends_at >= $3) OR
+          (starts_at >= $2 AND ends_at <= $3)
+        )
+    `, [product_id, starts_at, ends_at]);
+
+    if (overlapping) {
+      return res.status(400).json({
+        error: 'Overlapping deal',
+        message: 'This product already has an active deal during this time period'
+      });
+    }
+
+    // Create the deal
+    const result = await db.run(`
+      INSERT INTO flash_deals (
+        product_id, seller_id, original_price, deal_price, 
+        discount_percentage, quantity_available, quantity_sold,
+        starts_at, ends_at, is_active
+      ) VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8, true)
+    `, [
+      product_id,
+      req.seller.id,
+      original_price,
+      deal_price,
+      discount_percentage,
+      quantity_available,
+      starts_at,
+      ends_at
+    ]);
+
+    const newDeal = await db.get(`
+      SELECT fd.*, 
+             p.name as product_name, p.slug as product_slug, p.image_url
+      FROM flash_deals fd
+      JOIN products p ON fd.product_id = p.id
+      WHERE fd.id = $1
+    `, [result.lastID]);
 
     res.json({
       success: true,
-      message: 'Delivery proof uploaded successfully',
-      order: updatedOrder
+      message: 'Flash deal created successfully',
+      deal: newDeal
     });
   } catch (error) {
-    console.error('Error uploading delivery proof:', error);
-    res.status(500).json({ error: 'Failed to upload delivery proof' });
+    console.error('Error creating flash deal:', error);
+    res.status(500).json({ error: 'Failed to create flash deal' });
+  }
+});
+
+// PUT /api/seller/deals/:id - Update a flash deal
+router.put('/deals/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      deal_price,
+      discount_percentage,
+      quantity_available,
+      ends_at,
+      is_active
+    } = req.body;
+
+    // Verify deal belongs to seller
+    const deal = await db.get(
+      'SELECT * FROM flash_deals WHERE id = $1 AND seller_id = $2',
+      [id, req.seller.id]
+    );
+
+    if (!deal) {
+      return res.status(404).json({
+        error: 'Deal not found',
+        message: 'Flash deal does not exist or does not belong to you'
+      });
+    }
+
+    // Build update query dynamically
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (deal_price !== undefined) {
+      updates.push(`deal_price = $${paramIndex++}`);
+      params.push(deal_price);
+    }
+
+    if (discount_percentage !== undefined) {
+      updates.push(`discount_percentage = $${paramIndex++}`);
+      params.push(discount_percentage);
+    }
+
+    if (quantity_available !== undefined) {
+      updates.push(`quantity_available = $${paramIndex++}`);
+      params.push(quantity_available);
+    }
+
+    if (ends_at !== undefined) {
+      updates.push(`ends_at = $${paramIndex++}`);
+      params.push(ends_at);
+    }
+
+    if (is_active !== undefined) {
+      updates.push(`is_active = $${paramIndex++}`);
+      params.push(is_active);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({
+        error: 'No updates provided',
+        message: 'Please provide fields to update'
+      });
+    }
+
+    params.push(id);
+    await db.run(
+      `UPDATE flash_deals SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      params
+    );
+
+    const updatedDeal = await db.get(`
+      SELECT fd.*, 
+             p.name as product_name, p.slug as product_slug, p.image_url,
+             EXTRACT(EPOCH FROM (fd.ends_at - NOW())) as seconds_remaining
+      FROM flash_deals fd
+      JOIN products p ON fd.product_id = p.id
+      WHERE fd.id = $1
+    `, [id]);
+
+    res.json({
+      success: true,
+      message: 'Flash deal updated successfully',
+      deal: updatedDeal
+    });
+  } catch (error) {
+    console.error('Error updating flash deal:', error);
+    res.status(500).json({ error: 'Failed to update flash deal' });
+  }
+});
+
+// DELETE /api/seller/deals/:id - Delete a flash deal
+router.delete('/deals/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify deal belongs to seller
+    const deal = await db.get(
+      'SELECT * FROM flash_deals WHERE id = $1 AND seller_id = $2',
+      [id, req.seller.id]
+    );
+
+    if (!deal) {
+      return res.status(404).json({
+        error: 'Deal not found',
+        message: 'Flash deal does not exist or does not belong to you'
+      });
+    }
+
+    // Check if deal has sales
+    if (deal.quantity_sold > 0) {
+      // Deactivate instead of delete if there are sales
+      await db.run('UPDATE flash_deals SET is_active = false WHERE id = $1', [id]);
+      return res.json({
+        success: true,
+        message: 'Flash deal deactivated (has existing sales)'
+      });
+    }
+
+    // Delete if no sales
+    await db.run('DELETE FROM flash_deals WHERE id = $1', [id]);
+
+    res.json({
+      success: true,
+      message: 'Flash deal deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting flash deal:', error);
+    res.status(500).json({ error: 'Failed to delete flash deal' });
   }
 });
 

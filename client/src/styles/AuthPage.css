@@ -508,17 +508,18 @@
 .resend-form input {
   width: 100%;
   padding: 12px;
-  background: rgba(15, 17, 21, 0.6);
+  background: #ffffff;
   border: 2px solid rgba(200, 164, 90, 0.3);
   border-radius: 8px;
-  color: #e6e6e6;
+  color: #2a2a2a;
   font-size: 1rem;
 }
 
 .resend-form input:focus {
   outline: none;
   border-color: #c8a45a;
-  background: rgba(15, 17, 21, 0.8);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(200, 164, 90, 0.1);
 }
 
 .help-text {

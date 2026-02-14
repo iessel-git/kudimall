@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { PaystackButton } from 'react-paystack';
 import { getProduct, createOrder, getBuyerProfile } from '../services/api';
 import '../styles/CheckoutPage.css';
+
+const PAYSTACK_PUBLIC_KEY = process.env.REACT_APP_PAYSTACK_PUBLIC_KEY;
 
 const CheckoutPage = () => {
   const { productSlug } = useParams();
@@ -11,6 +14,11 @@ const CheckoutPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [buyer, setBuyer] = useState(null);
   const [showAccountPrompt, setShowAccountPrompt] = useState(true);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const [orderNumber, setOrderNumber] = useState(null);
+  const [paymentData, setPaymentData] = useState(null);
+  const [paymentComplete, setPaymentComplete] = useState(false);
+  const [paymentReference, setPaymentReference] = useState(null);
   
   const [formData, setFormData] = useState({
     buyer_name: '',
@@ -77,29 +85,59 @@ const CheckoutPage = () => {
       };
 
       const response = await createOrder(orderData);
+      const createdOrderNumber = response.data.order_number;
+      setOrderNumber(createdOrderNumber);
       
-      // If buyer is not logged in, offer to create account
-      if (!buyer) {
-        const createAccount = window.confirm(
-          `Order placed successfully! Order Number: ${response.data.order_number}\n\n` +
-          'Would you like to create an account to track this order?'
-        );
-        if (createAccount) {
-          navigate('/buyer/signup', { 
-            state: { from: { pathname: '/buyer/dashboard' } }
-          });
-        } else {
-          navigate('/');
-        }
-      } else {
-        alert(`Order placed successfully! Order Number: ${response.data.order_number}`);
-        navigate('/buyer/dashboard');
-      }
+      // Calculate payment amount in pesewas (GHS to pesewas)
+      const totalAmount = product.price * parseInt(formData.quantity);
+      const amountInPesewas = totalAmount * 100;
+      
+      // Prepare payment data for Paystack
+      const email = formData.buyer_email;
+      const amount = amountInPesewas;
+      const reference = `KM-${Date.now()}-${createdOrderNumber}`;
+      const publicKey = PAYSTACK_PUBLIC_KEY;
+      const metadata = {
+        buyer_name: formData.buyer_name,
+        buyer_phone: formData.buyer_phone,
+        order_number: createdOrderNumber,
+        product_name: product.name
+      };
+      
+      setPaymentData({
+        email,
+        amount,
+        currency: 'GHS',
+        reference,
+        publicKey,
+        metadata
+      });
+      
+      setOrderCreated(true);
     } catch (error) {
       console.error('Error creating order:', error);
       alert('Failed to place order. Please try again.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePaymentSuccess = (reference) => {
+    console.log('Payment successful:', reference);
+    setPaymentReference(reference.reference);
+    setPaymentComplete(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePaymentClose = () => {
+    alert(
+      `Order ${orderNumber} is on hold pending payment.\n\n` +
+      'You can complete payment from your dashboard or email.'
+    );
+    if (buyer) {
+      navigate('/buyer/dashboard');
+    } else {
+      navigate('/');
     }
   };
 
@@ -112,6 +150,134 @@ const CheckoutPage = () => {
   }
 
   const totalAmount = product.price * formData.quantity;
+
+  // Show confirmation screen after payment is complete
+  if (paymentComplete) {
+    return (
+      <div className="checkout-page">
+        <div className="container">
+          <div className="payment-screen">
+            <div className="payment-icon">✅</div>
+            <h1 className="page-title">Payment Successful!</h1>
+            
+            <div className="payment-message">
+              <p className="order-number">
+                Order Number: <strong>{orderNumber}</strong>
+              </p>
+              <p>Payment Reference: <strong>{paymentReference}</strong></p>
+              <p style={{ marginTop: '20px' }}>
+                Thank you for your purchase! Your order has been confirmed and 
+                is being processed.
+              </p>
+            </div>
+
+            <div className="escrow-protection">
+              <p>
+                🔒 <strong>Your payment is protected:</strong> Funds are held in escrow 
+                until you confirm delivery. After receiving your order, please confirm 
+                receipt through your dashboard or the link we'll send via email.
+              </p>
+            </div>
+
+            <div className="payment-actions">
+              {buyer ? (
+                <button 
+                  onClick={() => navigate('/buyer/dashboard')} 
+                  className="btn-payment"
+                >
+                  Go to Dashboard
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
+                  <p>Would you like to create an account to track your order?</p>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                      onClick={() => navigate('/buyer/signup', { 
+                        state: { from: { pathname: '/buyer/dashboard' } }
+                      })} 
+                      className="btn-payment"
+                    >
+                      Create Account
+                    </button>
+                    <button 
+                      onClick={() => navigate('/')} 
+                      className="btn-payment" 
+                      style={{ background: '#6c757d' }}
+                    >
+                      Continue Shopping
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="order-details" style={{ marginTop: '30px', textAlign: 'left' }}>
+              <h3>Order Details</h3>
+              <p><strong>Product:</strong> {product.name}</p>
+              <p><strong>Quantity:</strong> {formData.quantity}</p>
+              <p><strong>Total Amount:</strong> ₵{totalAmount.toLocaleString()}</p>
+              <p><strong>Delivery Address:</strong><br />{formData.delivery_address}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show payment screen after order is created
+  if (orderCreated && paymentData) {
+    return (
+      <div className="checkout-page">
+        <div className="container">
+          <h1 className="page-title">Complete Payment</h1>
+          
+          <div className="payment-screen">
+            <div className="payment-icon">💳</div>
+            <h2>Order Created Successfully!</h2>
+            <p className="order-number">Order Number: <strong>{orderNumber}</strong></p>
+            
+            <div className="payment-message">
+              <p>
+                Your order has been created and is ready for payment.
+                Click below to complete your secure payment.
+              </p>
+            </div>
+
+            <div className="payment-info">
+              <h3>Payment Amount</h3>
+              <p className="payment-amount">₵{totalAmount.toLocaleString()}</p>
+              
+              <div className="payment-methods">
+                <p><strong>Accepted Payment Methods:</strong></p>
+                <ul>
+                  <li>💳 Debit/Credit Cards (Visa, Mastercard)</li>
+                  <li>📱 Mobile Money</li>
+                  <li>🏦 Bank Transfer</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="payment-actions">
+              <PaystackButton
+                {...paymentData}
+                text="Proceed to Payment"
+                onSuccess={handlePaymentSuccess}
+                onClose={handlePaymentClose}
+                className="btn-payment"
+              />
+            </div>
+
+            <div className="escrow-protection">
+              <p>
+                🔒 <strong>100% Secure:</strong> Your payment is protected by escrow.
+                Money is held safely until you confirm delivery.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="checkout-page">

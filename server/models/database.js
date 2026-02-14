@@ -10,11 +10,16 @@ const pool = process.env.DATABASE_URL
       user: process.env.DB_USER || 'postgres',
       host: process.env.DB_HOST || 'localhost',
       database: process.env.DB_NAME || 'kudimall_dev',
-      password: process.env.DB_PASSWORD || '@Memba3nyinaa2$',
+      password: process.env.DB_PASSWORD,
       port: parseInt(process.env.DB_PORT || '5432'),
     });
 
 class Database {
+  async query(sql, params = []) {
+    const result = await pool.query(sql, params);
+    return result;
+  }
+
   async run(sql, params = []) {
     const result = await pool.query(sql, params);
     return { rowCount: result.rowCount, rows: result.rows };

@@ -420,3 +420,183 @@
     margin: 0 auto;
   }
 }
+
+/* Payment Screen Styles */
+.payment-screen {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 50px;
+  border-radius: 12px;
+  box-shadow: var(--lux-shadow);
+  text-align: center;
+}
+
+.payment-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.5s ease;
+}
+
+.payment-screen h2 {
+  font-size: 28px;
+  color: var(--lux-ink);
+  margin-bottom: 16px;
+}
+
+.order-number {
+  font-size: 16px;
+  color: var(--lux-slate);
+  margin-bottom: 30px;
+}
+
+.payment-message {
+  background: var(--lux-ivory);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 30px;
+}
+
+.payment-message p {
+  color: var(--lux-slate);
+  line-height: 1.8;
+  margin: 0;
+}
+
+.payment-info {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.payment-info h3 {
+  font-size: 18px;
+  color: var(--lux-ink-2);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.payment-amount {
+  font-size: 42px;
+  font-weight: bold;
+  color: var(--lux-gold);
+  text-align: center;
+  margin: 20px 0;
+}
+
+.payment-methods {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.payment-methods p {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.payment-methods ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.payment-methods li {
+  padding: 8px 0;
+  color: var(--lux-slate);
+  font-size: 14px;
+}
+
+.payment-actions {
+  margin: 30px 0;
+}
+
+.btn-payment {
+  background: var(--lux-gold);
+  color: #fff;
+  border: none;
+  padding: 16px 48px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(15, 17, 21, 0.15);
+}
+
+.btn-payment:hover {
+  background: #c49f3d;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(15, 17, 21, 0.2);
+}
+
+.escrow-protection {
+  background: #e8f5e9;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #4caf50;
+}
+
+.escrow-protection p {
+  color: #2e7d32;
+  font-size: 14px;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.order-details {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 30px;
+}
+
+.order-details h3 {
+  font-size: 18px;
+  color: var(--lux-ink);
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--lux-gold);
+  padding-bottom: 8px;
+}
+
+.order-details p {
+  margin: 12px 0;
+  color: var(--lux-slate);
+  line-height: 1.6;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-screen {
+    padding: 30px 20px;
+  }
+
+  .payment-icon {
+    font-size: 48px;
+  }
+
+  .payment-screen h2 {
+    font-size: 22px;
+  }
+
+  .payment-amount {
+    font-size: 32px;
+  }
+
+  .btn-payment {
+    padding: 14px 32px;
+    font-size: 16px;
+    width: 100%;
+  }
+}

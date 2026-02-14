@@ -18,8 +18,13 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
     
     let query = `
-      SELECT p.*, s.name as seller_name, s.trust_level, s.is_verified, 
-             c.name as category_name
+      SELECT p.*, 
+             COALESCE(s.name, s.shop_name) as seller_name, 
+             s.slug as seller_slug,
+             s.trust_level, 
+             s.is_verified, 
+             c.name as category_name,
+             c.slug as category_slug
       FROM products p
       JOIN sellers s ON p.seller_id = s.id
       JOIN categories c ON p.category_id = c.id
@@ -28,11 +33,11 @@ router.get('/', async (req, res) => {
     const params = [];
     
     if (featured === 'true') {
-      query += ' AND p.is_featured = 1';
+      query += ' AND p.is_featured = TRUE';
     }
     
     if (available === 'true') {
-      query += ' AND p.is_available = 1';
+      query += ' AND p.is_available = TRUE';
     }
     
     if (min_price) {

@@ -3,8 +3,15 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../models/database');
+const logger = require('../utils/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'kudimall_delivery_secret_key_2024';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
+  logger.error('FATAL: JWT_SECRET environment variable is not set');
+  process.exit(1);
+}
+
 const JWT_EXPIRY = '30d';
 
 const authenticateDeliveryToken = (req, res, next) => {

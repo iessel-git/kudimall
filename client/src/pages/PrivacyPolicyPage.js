@@ -7,7 +7,7 @@ const PrivacyPolicyPage = () => {
       <div className="container">
         <div className="support-header">
           <h1>Privacy Policy</h1>
-          <p>Last updated: February 7, 2026</p>
+          <p>Last updated: February 13, 2026</p>
         </div>
 
         <div className="legal-content">
@@ -56,7 +56,27 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>3. Information Sharing</h2>
+            <h2>3. Data Retention</h2>
+            <p>
+              We retain your personal information only as long as necessary to fulfill the purposes 
+              outlined in this policy:
+            </p>
+            <ul>
+              <li><strong>Active Accounts:</strong> Data retained while your account is active</li>
+              <li><strong>Transaction Records:</strong> 7 years for tax and legal compliance</li>
+              <li><strong>Closed Accounts:</strong> Personal data deleted within 90 days of account closure (except transaction records)</li>
+              <li><strong>Marketing Data:</strong> Deleted within 30 days of opt-out request</li>
+              <li><strong>Legal Holds:</strong> Data preserved longer if required by law or ongoing legal proceedings</li>
+              <li><strong>Backup Systems:</strong> Deleted data may persist in backups for up to 90 days before permanent deletion</li>
+            </ul>
+            <p>
+              You may request deletion of your data at any time by contacting privacy@kudimall.com, 
+              subject to our legal retention requirements.
+            </p>
+          </section>
+
+          <section className="legal-section">
+            <h2>4. Information Sharing</h2>
             <p>We do not sell your personal information. We may share information with:</p>
             
             <h3>Sellers</h3>
@@ -79,7 +99,7 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>4. Escrow and Payment Security</h2>
+            <h2>5. Escrow and Payment Security</h2>
             <p>
               All payment information is encrypted and processed through secure, PCI-compliant 
               payment gateways. We never store complete credit card information on our servers. 
@@ -88,7 +108,7 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>5. Data Security</h2>
+            <h2>6. Data Security</h2>
             <p>
               We implement industry-standard security measures to protect your information:
             </p>
@@ -102,18 +122,23 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>6. Your Rights and Choices</h2>
+            <h2>7. Your Rights and Choices</h2>
             <ul>
               <li><strong>Access:</strong> Request a copy of your personal data</li>
               <li><strong>Correction:</strong> Update or correct your information</li>
-              <li><strong>Deletion:</strong> Request deletion of your account and data</li>
+              <li><strong>Deletion:</strong> Request deletion of your account and data (subject to legal retention)</li>
               <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
               <li><strong>Portability:</strong> Request your data in a portable format</li>
+              <li><strong>Object:</strong> Object to processing of your data for specific purposes</li>
+              <li><strong>Restrict:</strong> Request restriction of processing in certain circumstances</li>
             </ul>
+            <p>
+              To exercise these rights, contact privacy@kudimall.com. We will respond within 30 days.
+            </p>
           </section>
 
           <section className="legal-section">
-            <h2>7. Cookies and Tracking</h2>
+            <h2>8. Cookies and Tracking</h2>
             <p>
               We use cookies and similar technologies to improve your experience, analyze 
               usage patterns, and personalize content. You can control cookies through your 
@@ -122,7 +147,7 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>8. Social Commerce Privacy</h2>
+            <h2>9. Social Commerce Privacy</h2>
             <p>
               When you purchase through social media links, we collect the same information 
               as direct marketplace purchases. We do not access your social media accounts 
@@ -131,7 +156,7 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>9. Children's Privacy</h2>
+            <h2>10. Children's Privacy</h2>
             <p>
               KudiMall is not intended for users under the age of 18. We do not knowingly 
               collect personal information from children. If you believe we have inadvertently 
@@ -140,30 +165,33 @@ const PrivacyPolicyPage = () => {
           </section>
 
           <section className="legal-section">
-            <h2>10. International Users</h2>
+            <h2>11. International Users</h2>
             <p>
               Your information may be transferred to and processed in countries other than 
               your own. We ensure appropriate safeguards are in place for international 
-              data transfers.
+              data transfers, including standard contractual clauses and adequacy decisions 
+              where applicable.
             </p>
           </section>
 
           <section className="legal-section">
-            <h2>11. Changes to Privacy Policy</h2>
+            <h2>12. Changes to Privacy Policy</h2>
             <p>
-              We may update this privacy policy periodically. We will notify you of 
-              significant changes via email or prominent notice on our platform.
+              We may update this privacy policy periodically. Material changes will be notified 
+              via email at least 30 days before taking effect. We will also update the "Last updated" 
+              date at the top of this policy.
             </p>
           </section>
 
           <section className="legal-section">
-            <h2>12. Contact Us</h2>
+            <h2>13. Contact Us</h2>
             <p>
               For questions about this Privacy Policy or to exercise your rights, contact us at:
             </p>
             <p>
               Email: privacy@kudimall.com<br />
-              Address: KudiMall Privacy Team, [Address]
+              Address: KudiMall Privacy Team, 123 Commerce Avenue, Business District, Lagos, Nigeria<br />
+              Response Time: We respond to data requests within 30 days
             </p>
           </section>
         </div>

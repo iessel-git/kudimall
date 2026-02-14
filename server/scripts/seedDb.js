@@ -11,14 +11,14 @@ const seedDb = async () => {
 
     // Seed Categories (Ghana-focused)
     const categories = [
-      { name: 'Electronics', description: 'Phones, gadgets, and more' },
-      { name: 'Fashion', description: 'Clothing and accessories' },
-      { name: 'Groceries', description: 'Food and beverages' }
+      { name: 'Electronics', description: 'Phones, gadgets, and more', slug: 'electronics' },
+      { name: 'Fashion', description: 'Clothing and accessories', slug: 'fashion' },
+      { name: 'Groceries', description: 'Food and beverages', slug: 'groceries' }
     ];
     for (const cat of categories) {
       await db.run(
-        'INSERT INTO categories (name, description) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-        [cat.name, cat.description]
+        'INSERT INTO categories (name, description, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING',
+        [cat.name, cat.description, cat.slug]
       );
     }
 

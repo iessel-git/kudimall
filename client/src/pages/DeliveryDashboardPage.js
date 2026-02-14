@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   getDeliveryProfile,
   getDeliveryOrders,
+  getAvailableDeliveryOrders,
   claimDeliveryOrder,
   uploadDeliveryProofPhotoByDelivery
 } from '../services/api';
@@ -12,20 +13,24 @@ const DeliveryDashboardPage = () => {
   const navigate = useNavigate();
   const [deliveryUser, setDeliveryUser] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [availableOrders, setAvailableOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [claimNumber, setClaimNumber] = useState('');
   const [claiming, setClaiming] = useState(false);
   const [uploadingOrder, setUploadingOrder] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState({});
+  const [claimingOrderId, setClaimingOrderId] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     try {
-      const [profileRes, ordersRes] = await Promise.all([
+      const [profileRes, ordersRes, availableRes] = await Promise.all([
         getDeliveryProfile(),
-        getDeliveryOrders()
+        getDeliveryOrders(),
+        getAvailableDeliveryOrders()
       ]);
       setDeliveryUser(profileRes.data.deliveryUser);
       setOrders(ordersRes.data.orders || []);
+      setAvailableOrders(availableRes.data.orders || []);
     } catch (error) {
       console.error('Error loading delivery dashboard:', error);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -56,18 +61,39 @@ const DeliveryDashboardPage = () => {
   const handleClaimOrder = async (e) => {
     e.preventDefault();
     if (!claimNumber.trim()) {
+      alert('Please enter an order number');
       return;
     }
 
     try {
       setClaiming(true);
-      await claimDeliveryOrder(claimNumber.trim());
+      const response = await claimDeliveryOrder(claimNumber.trim());
+      alert(`✅ Order ${claimNumber.trim()} claimed successfully!`);
       setClaimNumber('');
       await fetchOrders();
     } catch (error) {
-      alert(error.response?.data?.error || 'Failed to claim order');
+      const errorMsg = error.response?.data?.error || 'Failed to claim order';
+      alert(`❌ ${errorMsg}`);
+      console.error('Claim error:', error.response?.data);
     } finally {
       setClaiming(false);
+    }
+  };
+
+  const handleQuickClaim = async (orderNumber) => {
+    if (claimingOrderId) return;
+
+    try {
+      setClaimingOrderId(orderNumber);
+      await claimDeliveryOrder(orderNumber);
+      alert(`✅ Order ${orderNumber} claimed successfully!`);
+      await fetchOrders();
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Failed to claim order';
+      alert(`❌ ${errorMsg}`);
+      console.error('Claim error:', error.response?.data);
+    } finally {
+      setClaimingOrderId(null);
     }
   };
 
@@ -134,6 +160,43 @@ const DeliveryDashboardPage = () => {
             </button>
           </form>
         </div>
+
+        {availableOrders.length > 0 && (
+          <div className="delivery-orders">
+            <h2>📦 Available Orders ({availableOrders.length})</h2>
+            <p className="available-orders-subtitle">These orders are ready for pickup and delivery</p>
+            <div className="delivery-orders-grid">
+              {availableOrders.map((order) => (
+                <div key={order.id} className="delivery-order-card available">
+                  <div className="delivery-order-header">
+                    <h3>Order #{order.order_number}</h3>
+                    <span className="status-badge status-shipped">
+                      {order.status}
+                    </span>
+                  </div>
+                  <p><strong>Buyer:</strong> {order.buyer_name}</p>
+                  <p><strong>Phone:</strong> {order.buyer_phone}</p>
+                  <p><strong>Address:</strong> {order.delivery_address}</p>
+                  {order.tracking_number && (
+                    <p><strong>Tracking:</strong> {order.tracking_number}</p>
+                  )}
+                  {order.product_name && (
+                    <p><strong>Item:</strong> {order.product_name}</p>
+                  )}
+                  <p><strong>Seller:</strong> {order.seller_name} {order.seller_phone && `(${order.seller_phone})`}</p>
+                  
+                  <button
+                    onClick={() => handleQuickClaim(order.order_number)}
+                    className="btn-primary btn-claim-order"
+                    disabled={claimingOrderId === order.order_number}
+                  >
+                    {claimingOrderId === order.order_number ? '⏳ Claiming...' : '✅ Claim This Order'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="delivery-orders">
           <h2>My Deliveries</h2>
