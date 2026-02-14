@@ -437,21 +437,15 @@ router.post('/seller/login', async (req, res) => {
         );
       }
 
-      // Automatically resend verification email when login is blocked
-      const emailResult = await sendVerificationEmail(seller.email, seller.name, verificationToken);
-      const exposableErrorInfo = getExposableErrorInfo(emailResult);
-
-      const baseVerificationMessage = 'Please verify your email address before logging in';
-      const userFriendlyMessage = emailResult.success
-        ? `${baseVerificationMessage}. A new verification link has been sent to your inbox.`
-        : `${getUserFriendlyEmailErrorMessage(emailResult) || baseVerificationMessage}.`;
+      // Fire-and-forget: send email in background without waiting
+      sendVerificationEmail(seller.email, seller.name, verificationToken).catch(err => {
+        console.error('Background email send failed:', err);
+      });
 
       return res.status(403).json({ 
         error: 'Email not verified',
-        message: userFriendlyMessage,
-        requiresEmailVerification: true,
-        emailSent: emailResult.success,
-        ...exposableErrorInfo
+        message: 'Please verify your email address before logging in. A verification link has been sent to your inbox.',
+        requiresEmailVerification: true
       });
     }
 
