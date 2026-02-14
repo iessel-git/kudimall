@@ -642,6 +642,42 @@ app.get('/api/debug-featured', async (req, res) => {
   }
 });
 
+// Fix products with null category_id
+app.post('/api/fix-product-categories', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // Get all categories
+    const categories = await db.all('SELECT id FROM categories');
+    if (categories.length === 0) {
+      return res.status(400).json({ error: 'No categories found' });
+    }
+    
+    // Get products with null category_id
+    const productsWithoutCategory = await db.all('SELECT id, name FROM products WHERE category_id IS NULL');
+    
+    let updated = 0;
+    for (const product of productsWithoutCategory) {
+      // Assign a random category
+      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+      await db.run('UPDATE products SET category_id = $1 WHERE id = $2', [randomCategory.id, product.id]);
+      updated++;
+    }
+    
+    res.json({ 
+      status: 'success',
+      message: `Fixed ${updated} products with null category_id`,
+      updated
+    });
+  } catch (error) {
+    console.error('Fix product categories error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
