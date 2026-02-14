@@ -69,45 +69,89 @@ router.get('/', requireAuth, async (req, res) => {
       cart = { id: result.rows[0].id };
     }
 
-    const items = await db.all(
-      `SELECT ci.id, ci.quantity, ci.price as unit_price, ci.saved_for_later,
-              p.price as current_product_price,
-              COALESCE(fd.deal_price, ci.price) as effective_price,
-              (ci.quantity * COALESCE(fd.deal_price, ci.price)) as subtotal,
-              p.id as product_id, p.name, p.slug, p.image_url, p.stock, p.is_available,
-              s.name as seller_name, s.slug as seller_slug, s.id as seller_id,
-              fd.deal_price, fd.discount_percentage, fd.ends_at as deal_ends_at
-       FROM cart_items ci
-       JOIN products p ON ci.product_id = p.id
-       JOIN sellers s ON p.seller_id = s.id
-       LEFT JOIN flash_deals fd ON fd.product_id = p.id 
-         AND fd.is_active = true 
-         AND fd.starts_at <= NOW() 
-         AND fd.ends_at > NOW()
-       WHERE ci.cart_id = $1 AND ci.saved_for_later = false
-       ORDER BY ci.created_at DESC`,
-      [cart.id]
-    );
+    // Try to get items with flash deals first, fall back to without if table doesn't exist
+    let items = [];
+    try {
+      items = await db.all(
+        `SELECT ci.id, ci.quantity, ci.price as unit_price, ci.saved_for_later,
+                p.price as current_product_price,
+                COALESCE(fd.deal_price, ci.price) as effective_price,
+                (ci.quantity * COALESCE(fd.deal_price, ci.price)) as subtotal,
+                p.id as product_id, p.name, p.slug, p.image_url, p.stock, p.is_available,
+                s.name as seller_name, s.slug as seller_slug, s.id as seller_id,
+                fd.deal_price, fd.discount_percentage, fd.ends_at as deal_ends_at
+         FROM cart_items ci
+         JOIN products p ON ci.product_id = p.id
+         JOIN sellers s ON p.seller_id = s.id
+         LEFT JOIN flash_deals fd ON fd.product_id = p.id 
+           AND fd.is_active = true 
+           AND fd.starts_at <= NOW() 
+           AND fd.ends_at > NOW()
+         WHERE ci.cart_id = $1 AND (ci.saved_for_later = false OR ci.saved_for_later IS NULL)
+         ORDER BY ci.created_at DESC`,
+        [cart.id]
+      );
+    } catch (error) {
+      console.log('Flash deals table not available, fetching cart without deals:', error.message);
+      // Fallback query without flash deals
+      items = await db.all(
+        `SELECT ci.id, ci.quantity, ci.price as unit_price, ci.saved_for_later,
+                p.price as current_product_price,
+                ci.price as effective_price,
+                (ci.quantity * ci.price) as subtotal,
+                p.id as product_id, p.name, p.slug, p.image_url, p.stock, p.is_available,
+                s.name as seller_name, s.slug as seller_slug, s.id as seller_id,
+                NULL as deal_price, NULL as discount_percentage, NULL as deal_ends_at
+         FROM cart_items ci
+         JOIN products p ON ci.product_id = p.id
+         JOIN sellers s ON p.seller_id = s.id
+         WHERE ci.cart_id = $1 AND (ci.saved_for_later = false OR ci.saved_for_later IS NULL)
+         ORDER BY ci.created_at DESC`,
+        [cart.id]
+      );
+    }
 
-    const savedItems = await db.all(
-      `SELECT ci.id, ci.quantity, ci.price as unit_price,
-              p.price as current_product_price,
-              COALESCE(fd.deal_price, ci.price) as effective_price,
-              (ci.quantity * COALESCE(fd.deal_price, ci.price)) as subtotal,
-              p.id as product_id, p.name, p.slug, p.image_url, p.stock, p.is_available,
-              s.name as seller_name, s.slug as seller_slug, s.id as seller_id,
-              fd.deal_price, fd.discount_percentage, fd.ends_at as deal_ends_at
-       FROM cart_items ci
-       JOIN products p ON ci.product_id = p.id
-       JOIN sellers s ON p.seller_id = s.id
-       LEFT JOIN flash_deals fd ON fd.product_id = p.id 
-         AND fd.is_active = true 
-         AND fd.starts_at <= NOW() 
-         AND fd.ends_at > NOW()
-       WHERE ci.cart_id = $1 AND ci.saved_for_later = true
-       ORDER BY ci.created_at DESC`,
-      [cart.id]
-    );
+    // Try to get saved items with flash deals first, fall back to without if table doesn't exist
+    let savedItems = [];
+    try {
+      savedItems = await db.all(
+        `SELECT ci.id, ci.quantity, ci.price as unit_price,
+                p.price as current_product_price,
+                COALESCE(fd.deal_price, ci.price) as effective_price,
+                (ci.quantity * COALESCE(fd.deal_price, ci.price)) as subtotal,
+                p.id as product_id, p.name, p.slug, p.image_url, p.stock, p.is_available,
+                s.name as seller_name, s.slug as seller_slug, s.id as seller_id,
+                fd.deal_price, fd.discount_percentage, fd.ends_at as deal_ends_at
+         FROM cart_items ci
+         JOIN products p ON ci.product_id = p.id
+         JOIN sellers s ON p.seller_id = s.id
+         LEFT JOIN flash_deals fd ON fd.product_id = p.id 
+           AND fd.is_active = true 
+           AND fd.starts_at <= NOW() 
+           AND fd.ends_at > NOW()
+         WHERE ci.cart_id = $1 AND ci.saved_for_later = true
+         ORDER BY ci.created_at DESC`,
+        [cart.id]
+      );
+    } catch (error) {
+      console.log('Flash deals table not available for saved items, fetching without deals');
+      // Fallback query without flash deals
+      savedItems = await db.all(
+        `SELECT ci.id, ci.quantity, ci.price as unit_price,
+                p.price as current_product_price,
+                ci.price as effective_price,
+                (ci.quantity * ci.price) as subtotal,
+                p.id as product_id, p.name, p.slug, p.image_url, p.stock, p.is_available,
+                s.name as seller_name, s.slug as seller_slug, s.id as seller_id,
+                NULL as deal_price, NULL as discount_percentage, NULL as deal_ends_at
+         FROM cart_items ci
+         JOIN products p ON ci.product_id = p.id
+         JOIN sellers s ON p.seller_id = s.id
+         WHERE ci.cart_id = $1 AND ci.saved_for_later = true
+         ORDER BY ci.created_at DESC`,
+        [cart.id]
+      );
+    }
 
     // Calculate totals
     const cartTotal = (items || []).reduce((sum, item) => sum + parseFloat(item.subtotal), 0);
