@@ -607,6 +607,29 @@ app.post('/api/fix-featured-products', async (req, res) => {
   }
 });
 
+// Debug: Check featured products directly
+app.get('/api/debug-featured', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    const featured = await db.all('SELECT id, name, seller_id, is_featured FROM products WHERE is_featured = TRUE LIMIT 20');
+    const total = await db.get('SELECT COUNT(*) as count FROM products');
+    const featuredCount = await db.get('SELECT COUNT(*) as count FROM products WHERE is_featured = TRUE');
+    
+    res.json({ 
+      totalProducts: total.count,
+      featuredCount: featuredCount.count,
+      featured
+    });
+  } catch (error) {
+    console.error('Debug featured error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
