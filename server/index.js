@@ -339,6 +339,66 @@ app.post('/api/run-missing-columns-migration', async (req, res) => {
   }
 });
 
+// Fix sellers without slugs (production endpoint)
+app.post('/api/fix-seller-slugs', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // Get all sellers without slugs
+    const sellersWithoutSlugs = await db.all(
+      'SELECT id, name, shop_name FROM sellers WHERE slug IS NULL'
+    );
+    
+    if (sellersWithoutSlugs.length === 0) {
+      return res.json({ 
+        status: 'success', 
+        message: 'All sellers already have slugs!',
+        updated: 0
+      });
+    }
+    
+    // Generate slug function
+    const generateSlug = (text) => {
+      return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+    };
+    
+    let updated = 0;
+    for (const seller of sellersWithoutSlugs) {
+      const baseName = seller.shop_name || seller.name || `seller-${seller.id}`;
+      let slug = generateSlug(baseName);
+      let counter = 1;
+      
+      // Ensure slug is unique
+      let slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
+      while (slugExists) {
+        slug = `${generateSlug(baseName)}-${counter}`;
+        slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
+        counter++;
+      }
+      
+      await db.run('UPDATE sellers SET slug = $1 WHERE id = $2', [slug, seller.id]);
+      updated++;
+    }
+    
+    res.json({ 
+      status: 'success', 
+      message: `Successfully generated slugs for ${updated} sellers!`,
+      updated
+    });
+  } catch (error) {
+    console.error('Slug fix error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
