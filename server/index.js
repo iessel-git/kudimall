@@ -616,10 +616,22 @@ app.get('/api/debug-featured', async (req, res) => {
     const total = await db.get('SELECT COUNT(*) as count FROM products');
     const featuredCount = await db.get('SELECT COUNT(*) as count FROM products WHERE is_featured = TRUE');
     
+    // Check the full query with joins
+    const featuredWithJoins = await db.all(`
+      SELECT p.id, p.name, p.seller_id, p.category_id, p.is_featured,
+             s.id as seller_exists, c.id as category_exists
+      FROM products p
+      LEFT  JOIN sellers s ON p.seller_id = s.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      WHERE p.is_featured = TRUE
+      LIMIT 20
+    `);
+    
     res.json({ 
       totalProducts: total.count,
       featuredCount: featuredCount.count,
-      featured
+      featured,
+      featuredWithJoins
     });
   } catch (error) {
     console.error('Debug featured error:', error);
