@@ -118,11 +118,12 @@ const getSmtpConfig = () => {
       pass: process.env.EMAIL_PASSWORD || 'your-password'
     },
     tls: {
-      servername: host
+      servername: host,
+      rejectUnauthorized: false
     },
-    connectionTimeout: 20000,
-    greetingTimeout: 20000,
-    socketTimeout: 30000
+    connectionTimeout: 45000,
+    greetingTimeout: 45000,
+    socketTimeout: 60000
   };
 };
 
@@ -134,9 +135,9 @@ const createEmailTransporter = () => {
         user: process.env.EMAIL_USER || 'your-email@gmail.com',
         pass: process.env.EMAIL_PASSWORD || 'your-app-password'
       },
-      connectionTimeout: 20000,
-      greetingTimeout: 20000,
-      socketTimeout: 30000
+      connectionTimeout: 45000,
+      greetingTimeout: 45000,
+      socketTimeout: 60000
     });
   }
 

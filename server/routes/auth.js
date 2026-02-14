@@ -35,7 +35,7 @@ const CONNECTION_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_TIMEOUT'];
 const EMAIL_SEND_TIMEOUT_MS = (() => {
   const parsed = Number.parseInt((process.env.EMAIL_SEND_TIMEOUT_MS || '').trim(), 10);
   if (!Number.isInteger(parsed) || parsed < 5000) {
-    return 30000;
+    return 60000; // Increased to 60 seconds for slower email servers
   }
   return parsed;
 })();
