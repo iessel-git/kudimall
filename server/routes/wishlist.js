@@ -136,9 +136,14 @@ router.delete('/remove/:productId', requireAuth, async (req, res) => {
 });
 
 // Check if product is in wishlist
-router.get('/check/:productId', requireAuth, async (req, res) => {
+router.get('/check/:productId', optionalAuth, async (req, res) => {
   try {
     const { productId } = req.params;
+
+    // If not authenticated, return false
+    if (!req.user || !req.user.id) {
+      return res.json({ inWishlist: false });
+    }
 
     const item = await db.get(
       'SELECT id FROM wishlists WHERE buyer_id = $1 AND product_id = $2',

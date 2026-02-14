@@ -465,8 +465,13 @@ router.post('/move-to-cart/:itemId', requireAuth, async (req, res) => {
 });
 
 // Get cart count only
-router.get('/count', requireAuth, async (req, res) => {
+router.get('/count', optionalAuth, async (req, res) => {
   try {
+    // If not authenticated, return 0
+    if (!req.user || !req.user.id) {
+      return res.json({ count: 0 });
+    }
+
     const cart = await db.get(
       'SELECT id FROM carts WHERE user_id = $1',
       [req.user.id]
