@@ -822,6 +822,94 @@ app.get('/api/debug/email-config', async (req, res) => {
   }
 });
 
+// Test email sending
+app.post('/api/debug/test-email', async (req, res) => {
+  try {
+    const nodemailer = require('nodemailer');
+    const { to } = req.body;
+    
+    if (!to) {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: 'Please provide email address in "to" field' 
+      });
+    }
+    
+    // Create transporter based on configuration
+    let transporter;
+    let transporterConfig = {};
+    
+    if (process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com')) {
+      transporterConfig = {
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      };
+      transporter = nodemailer.createTransport(transporterConfig);
+    } else {
+      transporterConfig = {
+        host: process.env.EMAIL_HOST || 'smtp.example.com',
+        port: parseInt(process.env.EMAIL_PORT || '587'),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      };
+      transporter = nodemailer.createTransport(transporterConfig);
+    }
+    
+    // Try to send test email
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: to,
+      subject: 'KudiMall Test Email',
+      html: '<p>This is a test email from KudiMall. If you received this, email is working correctly!</p>'
+    };
+    
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      res.json({
+        status: 'success',
+        message: 'Test email sent successfully',
+        messageId: info.messageId,
+        config: {
+          isGmail: process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com'),
+          host: transporterConfig.host || 'gmail',
+          port: transporterConfig.port || 'default',
+          secure: transporterConfig.secure || false,
+          from: process.env.EMAIL_USER
+        }
+      });
+    } catch (sendError) {
+      res.json({
+        status: 'error',
+        message: 'Failed to send test email',
+        error: sendError.message,
+        code: sendError.code,
+        command: sendError.command,
+        config: {
+          isGmail: process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com'),
+          host: transporterConfig.host || 'gmail',
+          port: transporterConfig.port || 'default',
+          secure: transporterConfig.secure || false,
+          hasHost: !!process.env.EMAIL_HOST,
+          hasPort: !!process.env.EMAIL_PORT,
+          hasSecure: !!process.env.EMAIL_SECURE
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
