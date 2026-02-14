@@ -755,6 +755,32 @@ app.post('/api/fix-product-slugs', async (req, res) => {
   }
 });
 
+// Fix existing cart items with NULL saved_for_later
+app.post('/api/fix-existing-cart-items', async (req, res) => {
+  try {
+    const db = require('./models/database');
+    
+    // Update all cart items with NULL saved_for_later to false
+    const result = await db.run(`
+      UPDATE cart_items 
+      SET saved_for_later = false 
+      WHERE saved_for_later IS NULL
+    `);
+    
+    res.json({ 
+      status: 'success',
+      message: 'Existing cart items updated successfully',
+      updated: result.changes || 0
+    });
+  } catch (error) {
+    console.error('Fix existing cart items error:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: error.message
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
