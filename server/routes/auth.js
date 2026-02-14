@@ -747,4 +747,251 @@ router.post('/seller/resend-verification', async (req, res) => {
   }
 });
 
+// Helper function to send password reset email with timeout
+const sendPasswordResetEmail = async (email, name, token) => {
+  // Wrap email sending in a promise with timeout (10 seconds)
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), 10000);
+  });
+
+  const emailPromise = (async () => {
+    try {
+      // Check if email is properly configured
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        console.warn('⚠️ Email not configured. Skipping password reset email.');
+        return { 
+          success: false, 
+          error: 'Email service not configured',
+          code: 'EMAIL_NOT_CONFIGURED'
+        };
+      }
+
+      const transporter = createEmailTransporter();
+      const resetUrl = `${FRONTEND_BASE_URL}/seller/reset-password?token=${token}`;
+      
+      const mailOptions = {
+        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        to: email,
+        subject: '🔑 Reset Your KudiMall Password',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 100%); 
+                        color: #c8a45a; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f6f1e6; padding: 30px; border-radius: 0 0 8px 8px; }
+              .button { display: inline-block; background: #c8a45a; color: white; 
+                        padding: 15px 30px; text-decoration: none; border-radius: 5px; 
+                        font-weight: bold; margin: 20px 0; }
+              .button:hover { background: #b08d45; }
+              .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+              .warning { background: #fff3cd; border-left: 4px solid #ffc107; 
+                         padding: 15px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔑 Password Reset Request</h1>
+                <p>KudiMall Marketplace</p>
+              </div>
+              <div class="content">
+                <h2>Hello ${name},</h2>
+                <p>We received a request to reset your password for your KudiMall seller account.</p>
+                <p>Click the button below to reset your password:</p>
+                <div style="text-align: center;">
+                  <a href="${resetUrl}" class="button">Reset Password</a>
+                </div>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #666; font-size: 12px;">${resetUrl}</p>
+                <div class="warning">
+                  <strong>⚠️ Security Notice:</strong>
+                  <ul>
+                    <li>This password reset link will expire in 1 hour</li>
+                    <li>If you didn't request a password reset, please ignore this email</li>
+                    <li>Never share this reset link with anyone</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="footer">
+                <p>© 2026 KudiMall. All rights reserved.</p>
+                <p>This is an automated email. Please do not reply.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      };
+      
+      await transporter.sendMail(mailOptions);
+      console.log('✓ Password reset email sent to:', email);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  })();
+
+  try {
+    // Race between email sending and timeout
+    return await Promise.race([emailPromise, timeoutPromise]);
+  } catch (error) {
+    console.error('Failed to send password reset email:', error);
+    
+    // Determine error type
+    let errorCode = 'EMAIL_SEND_FAILED';
+    let errorMessage = 'Failed to send email';
+    
+    if (error.message && error.message.includes('timeout')) {
+      errorCode = 'EMAIL_TIMEOUT';
+      errorMessage = 'Email server timeout - taking too long to respond';
+    } else if (error.code === 'EAUTH' || error.responseCode === 535) {
+      errorCode = 'EMAIL_AUTH_FAILED';
+      errorMessage = 'Email authentication failed';
+    } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+      errorCode = 'EMAIL_CONNECTION_FAILED';
+      errorMessage = 'Could not connect to email server';
+    } else if (error.code === 'EMESSAGE') {
+      errorCode = 'EMAIL_INVALID';
+      errorMessage = 'Invalid email address or message';
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage,
+      code: errorCode,
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined
+    };
+  }
+};
+
+// POST /api/auth/seller/forgot-password - Request password reset
+router.post('/seller/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        error: 'Missing email',
+        message: 'Email address is required' 
+      });
+    }
+
+    // Find seller by email
+    const seller = await db.get(
+      'SELECT id, name, email FROM sellers WHERE email = $1',
+      [email]
+    );
+
+    // Always return success message (don't reveal if email exists)
+    const successMessage = 'If an account exists with that email, a password reset link has been sent.';
+
+    if (!seller) {
+      // Don't reveal that email doesn't exist (security best practice)
+      return res.json({
+        success: true,
+        message: successMessage
+      });
+    }
+
+    // Generate password reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save reset token to database
+    await db.run(
+      `UPDATE sellers 
+       SET reset_token = $1,
+           reset_token_expiry = $2,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $3`,
+      [resetToken, resetTokenExpiry.toISOString(), seller.id]
+    );
+
+    // Send password reset email
+    const emailResult = await sendPasswordResetEmail(seller.email, seller.name, resetToken);
+
+    // Always return success (don't reveal email sending issues)
+    res.json({
+      success: true,
+      message: successMessage,
+      emailSent: emailResult.success
+    });
+
+  } catch (error) {
+    console.error('Error in forgot password:', error);
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Unable to process password reset request. Please try again later.'
+    });
+  }
+});
+
+// POST /api/auth/seller/reset-password - Reset password with token
+router.post('/seller/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ 
+        error: 'Missing fields',
+        message: 'Reset token and new password are required' 
+      });
+    }
+
+    // Validate password strength
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        error: 'Weak password',
+        message: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Find seller with valid reset token
+    const seller = await db.get(
+      `SELECT id, name, email 
+       FROM sellers 
+       WHERE reset_token = $1 
+       AND reset_token_expiry > CURRENT_TIMESTAMP`,
+      [token]
+    );
+
+    if (!seller) {
+      return res.status(400).json({ 
+        error: 'Invalid token',
+        message: 'Password reset link is invalid or has expired. Please request a new one.' 
+      });
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear reset token
+    await db.run(
+      `UPDATE sellers 
+       SET password = $1,
+           reset_token = NULL,
+           reset_token_expiry = NULL,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [hashedPassword, seller.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
+    });
+
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({
+      error: 'Server error',
+      message: 'Unable to reset password. Please try again later.'
+    });
+  }
+});
+
 module.exports = { router, authenticateToken };
