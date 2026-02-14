@@ -23,7 +23,7 @@ const FRONTEND_BASE_URL = (process.env.FRONTEND_URL || 'http://localhost:3000')
 // Configuration errors (EMAIL_NOT_CONFIGURED, EMAIL_PLACEHOLDER_VALUES) and 
 // authentication errors (EMAIL_AUTH_FAILED) are excluded because they reveal
 // details about the server's email setup and credentials, which could aid attackers.
-const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
+const EXPOSABLE_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_TIMEOUT', 'EMAIL_INVALID', 'EMAIL_SEND_FAILED'];
 
 // Error codes that indicate configuration issues (grouped for easier maintenance)
 const CONFIG_ERROR_CODES = ['EMAIL_NOT_CONFIGURED', 'EMAIL_PLACEHOLDER_VALUES'];
@@ -32,7 +32,7 @@ const CONFIG_ERROR_CODES = ['EMAIL_NOT_CONFIGURED', 'EMAIL_PLACEHOLDER_VALUES'];
 const AUTH_ERROR_CODES = ['EMAIL_AUTH_FAILED'];
 
 // Error codes that indicate connection issues (grouped for easier maintenance)
-const CONNECTION_ERROR_CODES = ['EMAIL_CONNECTION_FAILED'];
+const CONNECTION_ERROR_CODES = ['EMAIL_CONNECTION_FAILED', 'EMAIL_TIMEOUT'];
 
 // Email transporter configuration
 const createEmailTransporter = () => {
@@ -59,106 +59,124 @@ const createEmailTransporter = () => {
   });
 };
 
-// Helper function to send verification email
+// Helper function to send verification email with timeout
 const sendVerificationEmail = async (email, name, token) => {
+  // Wrap email sending in a promise with timeout (10 seconds)
+  const timeoutPromise = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), 10000);
+  });
+
+  const emailPromise = (async () => {
+    try {
+      // Check if email is properly configured
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+        console.warn('⚠️ Email not configured (EMAIL_USER or EMAIL_PASSWORD missing). Skipping verification email.');
+        return { 
+          success: false, 
+          error: 'Email service not configured',
+          code: 'EMAIL_NOT_CONFIGURED'
+        };
+      }
+
+      // Check if using default/placeholder values
+      const isPlaceholder = 
+        process.env.EMAIL_USER === 'your-email@gmail.com' ||
+        process.env.EMAIL_PASSWORD === 'your-app-password' ||
+        process.env.EMAIL_PASSWORD === 'your-password' ||
+        process.env.EMAIL_PASSWORD === 'your-16-character-app-password';
+      
+      if (isPlaceholder) {
+        console.warn('⚠️ Email configured with placeholder values. Please update EMAIL_USER and EMAIL_PASSWORD in .env file.');
+        return { 
+          success: false, 
+          error: 'Email service not configured properly',
+          code: 'EMAIL_PLACEHOLDER_VALUES'
+        };
+      }
+
+      const transporter = createEmailTransporter();
+      const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
+      
+      const mailOptions = {
+        from: process.env.EMAIL_USER || 'noreply@kudimall.com',
+        to: email,
+        subject: '🔐 Verify Your KudiMall Seller Email',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 100%); 
+                        color: #c8a45a; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+              .content { background: #f6f1e6; padding: 30px; border-radius: 0 0 8px 8px; }
+              .button { display: inline-block; background: #c8a45a; color: white; 
+                        padding: 15px 30px; text-decoration: none; border-radius: 5px; 
+                        font-weight: bold; margin: 20px 0; }
+              .button:hover { background: #b08d45; }
+              .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+              .warning { background: #fff3cd; border-left: 4px solid #ffc107; 
+                         padding: 15px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔐 Verify Your Email</h1>
+                <p>KudiMall Marketplace</p>
+              </div>
+              <div class="content">
+                <h2>Hello ${name},</h2>
+                <p>Thank you for signing up as a seller on KudiMall!</p>
+                <p>To complete your registration and start selling, please verify your email address by clicking the button below:</p>
+                <div style="text-align: center;">
+                  <a href="${verificationUrl}" class="button">Verify Email Address</a>
+                </div>
+                <p>Or copy and paste this link into your browser:</p>
+                <p style="word-break: break-all; color: #666; font-size: 12px;">${verificationUrl}</p>
+                <div class="warning">
+                  <strong>⚠️ Security Notice:</strong>
+                  <ul>
+                    <li>This verification link will expire in 24 hours</li>
+                    <li>If you didn't create an account with KudiMall, please ignore this email</li>
+                    <li>Never share this verification link with anyone</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="footer">
+                <p>© 2026 KudiMall. All rights reserved.</p>
+                <p>This is an automated email. Please do not reply.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      };
+      
+      await transporter.sendMail(mailOptions);
+      console.log('✓ Verification email sent to:', email);
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
+  })();
+
   try {
-    // Check if email is properly configured
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.warn('⚠️ Email not configured (EMAIL_USER or EMAIL_PASSWORD missing). Skipping verification email.');
-      return { 
-        success: false, 
-        error: 'Email service not configured',
-        code: 'EMAIL_NOT_CONFIGURED'
-      };
-    }
-
-    // Check if using default/placeholder values
-    const isPlaceholder = 
-      process.env.EMAIL_USER === 'your-email@gmail.com' ||
-      process.env.EMAIL_PASSWORD === 'your-app-password' ||
-      process.env.EMAIL_PASSWORD === 'your-password' ||
-      process.env.EMAIL_PASSWORD === 'your-16-character-app-password';
-    
-    if (isPlaceholder) {
-      console.warn('⚠️ Email configured with placeholder values. Please update EMAIL_USER and EMAIL_PASSWORD in .env file.');
-      return { 
-        success: false, 
-        error: 'Email service not configured properly',
-        code: 'EMAIL_PLACEHOLDER_VALUES'
-      };
-    }
-
-    const transporter = createEmailTransporter();
-    const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
-    
-    const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@kudimall.com',
-      to: email,
-      subject: '🔐 Verify Your KudiMall Seller Email',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #0f1115 0%, #1b1f2a 100%); 
-                      color: #c8a45a; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #f6f1e6; padding: 30px; border-radius: 0 0 8px 8px; }
-            .button { display: inline-block; background: #c8a45a; color: white; 
-                      padding: 15px 30px; text-decoration: none; border-radius: 5px; 
-                      font-weight: bold; margin: 20px 0; }
-            .button:hover { background: #b08d45; }
-            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            .warning { background: #fff3cd; border-left: 4px solid #ffc107; 
-                       padding: 15px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>🔐 Verify Your Email</h1>
-              <p>KudiMall Marketplace</p>
-            </div>
-            <div class="content">
-              <h2>Hello ${name},</h2>
-              <p>Thank you for signing up as a seller on KudiMall!</p>
-              <p>To complete your registration and start selling, please verify your email address by clicking the button below:</p>
-              <div style="text-align: center;">
-                <a href="${verificationUrl}" class="button">Verify Email Address</a>
-              </div>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #666; font-size: 12px;">${verificationUrl}</p>
-              <div class="warning">
-                <strong>⚠️ Security Notice:</strong>
-                <ul>
-                  <li>This verification link will expire in 24 hours</li>
-                  <li>If you didn't create an account with KudiMall, please ignore this email</li>
-                  <li>Never share this verification link with anyone</li>
-                </ul>
-              </div>
-            </div>
-            <div class="footer">
-              <p>© 2026 KudiMall. All rights reserved.</p>
-              <p>This is an automated email. Please do not reply.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `
-    };
-    
-    await transporter.sendMail(mailOptions);
-    console.log('✓ Verification email sent to:', email);
-    return { success: true };
+    // Race between email sending and timeout
+    return await Promise.race([emailPromise, timeoutPromise]);
   } catch (error) {
+    console.error('Failed to send verification email:', error);
     console.error('Failed to send verification email:', error);
     
     // Determine error type for better error handling
     let errorCode = 'EMAIL_SEND_FAILED';
     let errorMessage = 'Failed to send email';
     
-    if (error.code === 'EAUTH' || error.responseCode === 535) {
+    if (error.message && error.message.includes('timeout')) {
+      errorCode = 'EMAIL_TIMEOUT';
+      errorMessage = 'Email server timeout - taking too long to respond';
+    } else if (error.code === 'EAUTH' || error.responseCode === 535) {
       errorCode = 'EMAIL_AUTH_FAILED';
       errorMessage = 'Email authentication failed';
     } else if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
@@ -241,6 +259,8 @@ const getUserFriendlyEmailErrorMessage = (emailResult) => {
     return 'Email service is not configured. Please contact support';
   } else if (AUTH_ERROR_CODES.includes(emailResult.code)) {
     return 'Email service authentication failed. Please contact support';
+  } else if (emailResult.code === 'EMAIL_TIMEOUT') {
+    return 'Email server is taking too long to respond. Please try again in a moment';
   } else if (CONNECTION_ERROR_CODES.includes(emailResult.code)) {
     return 'Could not connect to email server. Please try again in a few moments';
   }
