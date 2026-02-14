@@ -8,11 +8,11 @@ router.get('/', async (req, res) => {
     const { 
       page = 1, 
       limit = 20, 
-      featured = false,
+      featured,
       min_price,
       max_price,
       trust_level,
-      available = true
+      available
     } = req.query;
     
     const offset = (page - 1) * limit;
@@ -36,8 +36,11 @@ router.get('/', async (req, res) => {
       query += ' AND p.is_featured = TRUE';
     }
     
+    // Only filter by available if explicitly set, default to showing all
     if (available === 'true') {
       query += ' AND p.is_available = TRUE';
+    } else if (available === 'false') {
+      query += ' AND p.is_available = FALSE';
     }
     
     if (min_price) {
