@@ -35,6 +35,11 @@ class Database {
     return result.rows;
   }
 
+  async executeRawQuery(sql) {
+    const result = await pool.query(sql);
+    return result.rows;
+  }
+
   async close() {
     await pool.end();
   }

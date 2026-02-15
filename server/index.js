@@ -120,6 +120,7 @@ const dealsRoutes = require('./routes/deals');
 const amaRoutes = require('./routes/ama');
 const paymentRoutes = require('./routes/payment');
 const paystackWebhookRoutes = require('./routes/paystackWebhook');
+const setupRoutes = require('./routes/setup'); // Database setup route
 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/sellers', sellerRoutes);
@@ -147,6 +148,8 @@ app.use('/api/deals', dealsRoutes);
 app.use('/api/ama', amaRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/webhooks/paystack', paystackWebhookRoutes);
+// TEMP: Database setup route - REMOVE after production setup
+app.use('/api/setup', setupRoutes);
 
 // Root route - API information
 app.get('/', (req, res) => {
