@@ -5,7 +5,8 @@ import {
   getDeliveryOrders,
   getAvailableDeliveryOrders,
   claimDeliveryOrder,
-  uploadDeliveryProofPhotoByDelivery
+  uploadDeliveryProofPhotoByDelivery,
+  deliveryLogout
 } from '../services/api';
 import '../styles/SellerDashboard.css';
 
@@ -52,7 +53,8 @@ const DeliveryDashboardPage = () => {
     fetchOrders();
   }, [navigate, fetchOrders]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await deliveryLogout(); } catch (e) { /* ignore */ }
     localStorage.removeItem('delivery_token');
     localStorage.removeItem('delivery_info');
     navigate('/delivery/login');

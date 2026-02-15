@@ -6,6 +6,7 @@ const fs = require('fs');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const { createEmailTransporter, getFrontendBaseUrl, getSmtpConfig } = require('./utils/emailConfig');
 
 const serverEnvPath = path.join(__dirname, '.env');
@@ -66,9 +67,24 @@ const isOriginAllowed = (origin) => {
 
 // Security: Add helmet for security headers
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for now to avoid breaking existing functionality
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'https://kudimall.vercel.app', 'https://kudimall.onrender.com'],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
+
+// Cookie parser for HttpOnly JWT cookies
+app.use(cookieParser());
 
 app.use(
   cors({
@@ -82,7 +98,18 @@ app.use(
   })
 );
 
-// Security: Rate limiting for authentication endpoints
+// Security: Global rate limiting for all API routes
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute per IP
+  message: 'Too many requests from this IP, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path === '/api/health', // Don't rate limit health checks
+});
+app.use('/api', globalLimiter);
+
+// Security: Strict rate limiting for authentication endpoints
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // Limit each IP to 5 requests per windowMs
@@ -101,6 +128,26 @@ if (!fs.existsSync(deliveryProofDir)) {
 }
 
 app.use('/uploads', express.static(uploadsDir));
+
+// Cookie-to-header middleware: extract JWT from HttpOnly cookie if no Authorization header
+app.use((req, res, next) => {
+  if (!req.headers.authorization && req.cookies) {
+    const path = req.path;
+    let cookieName = null;
+    if (path.startsWith('/api/delivery') || path.startsWith('/api/delivery-auth')) {
+      cookieName = 'delivery_token';
+    } else if (path.startsWith('/api/auth/seller') || path.startsWith('/api/seller')) {
+      cookieName = 'seller_token';
+    } else {
+      cookieName = 'buyer_token';
+    }
+    const cookieToken = req.cookies[cookieName];
+    if (cookieToken) {
+      req.headers.authorization = `Bearer ${cookieToken}`;
+    }
+  }
+  next();
+});
 
 // Routes
 const categoryRoutes = require('./routes/categories');

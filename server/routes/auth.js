@@ -514,6 +514,15 @@ router.post('/seller/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    // Set HttpOnly cookie for enhanced security
+    res.cookie('seller_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -1125,6 +1134,12 @@ router.post('/seller/reset-password', async (req, res) => {
       message: 'Unable to reset password. Please try again later.'
     });
   }
+});
+
+// POST /api/auth/seller/logout - Clear HttpOnly cookie
+router.post('/seller/logout', (req, res) => {
+  res.clearCookie('seller_token', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+  res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = { router, authenticateToken };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { getBuyerProfile, getBuyerOrders, confirmOrderReceived, reportOrderIssue } from '../services/api';
+import { getBuyerProfile, getBuyerOrders, confirmOrderReceived, reportOrderIssue, buyerLogout } from '../services/api';
 import '../styles/SellerDashboard.css';
 
 const BuyerDashboardPage = () => {
@@ -56,7 +56,8 @@ const BuyerDashboardPage = () => {
     fetchData();
   }, [navigate, fetchData]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await buyerLogout(); } catch (e) { /* ignore */ }
     localStorage.removeItem('buyer_token');
     localStorage.removeItem('buyer_info');
     navigate('/');

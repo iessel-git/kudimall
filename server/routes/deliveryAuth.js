@@ -12,7 +12,8 @@ if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
   process.exit(1);
 }
 
-const JWT_EXPIRY = '30d';
+const JWT_EXPIRY = '7d';
+const JWT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 const authenticateDeliveryToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -62,6 +63,15 @@ router.post('/signup', async (req, res) => {
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
+
+    // Set HttpOnly cookie
+    res.cookie('delivery_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: JWT_EXPIRY_MS,
+      path: '/'
+    });
 
     res.status(201).json({
       message: 'Delivery account created successfully',
@@ -117,6 +127,15 @@ router.post('/login', async (req, res) => {
       { expiresIn: JWT_EXPIRY }
     );
 
+    // Set HttpOnly cookie
+    res.cookie('delivery_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: JWT_EXPIRY_MS,
+      path: '/'
+    });
+
     res.json({
       message: 'Login successful',
       token,
@@ -150,6 +169,12 @@ router.get('/profile', authenticateDeliveryToken, async (req, res) => {
     console.error('Get delivery profile error:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
   }
+});
+
+// POST /api/delivery-auth/logout - Clear HttpOnly cookie
+router.post('/logout', (req, res) => {
+  res.clearCookie('delivery_token', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+  res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = { router, authenticateDeliveryToken };

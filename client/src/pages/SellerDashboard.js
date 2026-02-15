@@ -14,7 +14,8 @@ import {
   getMyDeals,
   createDeal,
   updateDeal,
-  deleteDeal
+  deleteDeal,
+  sellerLogout
 } from '../services/api';
 import '../styles/SellerDashboard.css';
 
@@ -132,7 +133,8 @@ const SellerDashboard = () => {
     fetchData();
   }, [checkAuth, fetchData]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await sellerLogout(); } catch (e) { /* ignore */ }
     localStorage.removeItem('seller_token');
     localStorage.removeItem('seller_info');
     navigate('/seller/login');

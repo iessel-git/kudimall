@@ -15,7 +15,8 @@ if (!JWT_SECRET && process.env.NODE_ENV !== 'test') {
   process.exit(1);
 }
 
-const JWT_EXPIRY = '30d'; // 30 days for buyers
+const JWT_EXPIRY = '7d'; // 7 days for buyers
+const JWT_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 const FRONTEND_BASE_URL = getFrontendBaseUrl();
 
 const EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES = 10;
@@ -273,8 +274,17 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: buyer.id, email: buyer.email, name: buyer.name, type: 'buyer' },
       JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: JWT_EXPIRY }
     );
+
+    // Set HttpOnly cookie for enhanced security
+    res.cookie('buyer_token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: JWT_EXPIRY_MS,
+      path: '/'
+    });
 
     res.json({
       message: 'Login successful',
@@ -701,6 +711,12 @@ router.post('/reset-password', async (req, res) => {
     console.error('Reset password error:', error);
     res.status(500).json({ error: 'Failed to reset password' });
   }
+});
+
+// POST /api/buyer-auth/logout - Clear HttpOnly cookie
+router.post('/logout', (req, res) => {
+  res.clearCookie('buyer_token', { httpOnly: true, secure: true, sameSite: 'lax', path: '/' });
+  res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = { router, authenticateBuyerToken };
