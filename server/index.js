@@ -121,6 +121,7 @@ const amaRoutes = require('./routes/ama');
 const paymentRoutes = require('./routes/payment');
 const paystackWebhookRoutes = require('./routes/paystackWebhook');
 const setupRoutes = require('./routes/setup'); // Database setup route
+const emailTestRoutes = require('./routes/emailTest'); // Email test route
 
 app.use('/api/categories', categoryRoutes);
 app.use('/api/sellers', sellerRoutes);
@@ -148,6 +149,7 @@ app.use('/api/deals', dealsRoutes);
 app.use('/api/ama', amaRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/webhooks/paystack', paystackWebhookRoutes);
+app.use('/api/auth', emailTestRoutes); // Email test endpoint
 // TEMP: Database setup route - REMOVE after production setup
 app.use('/api/setup', setupRoutes);
 
