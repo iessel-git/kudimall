@@ -14,6 +14,11 @@ const pool = process.env.DATABASE_URL
       port: parseInt(process.env.DB_PORT || '5432'),
     });
 
+// Handle pool errors to prevent crashes
+pool.on('error', (err) => {
+  console.error('Unexpected database pool error:', err.message);
+});
+
 class Database {
   async query(sql, params = []) {
     const result = await pool.query(sql, params);

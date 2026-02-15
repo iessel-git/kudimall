@@ -149,48 +149,19 @@ app.use('/api/deals', dealsRoutes);
 app.use('/api/ama', amaRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/webhooks/paystack', paystackWebhookRoutes);
-app.use('/api/auth', emailTestRoutes); // Email test endpoint
-// TEMP: Database setup route - REMOVE after production setup
-app.use('/api/setup', setupRoutes);
+// Email test and setup routes - ONLY available in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/auth', emailTestRoutes);
+  app.use('/api/setup', setupRoutes);
+}
 
-// Root route - API information
+// Root route - minimal API info (no endpoint map in production)
 app.get('/', (req, res) => {
   res.json({
     name: 'KudiMall API',
     version: '2.0.0',
     status: 'running',
-    message: 'Welcome to KudiMall API',
-    endpoints: {
-      health: '/api/health',
-      categories: '/api/categories',
-      sellers: '/api/sellers',
-      products: '/api/products',
-      search: '/api/search',
-      reviews: '/api/reviews',
-      orders: '/api/orders',
-      'seller-applications': '/api/seller-applications',
-      auth: '/api/auth',
-      'seller-management': '/api/seller',
-      'buyer-auth': '/api/buyer-auth',
-      'buyer-management': '/api/buyer',
-      'delivery-auth': '/api/delivery-auth',
-      'delivery-management': '/api/delivery',
-      wishlist: '/api/wishlist',
-      cart: '/api/cart',
-      deals: '/api/deals'
-    },
-    adminPages: {
-      'seller-applications': {
-        apiEndpoint: '/api/seller-applications',
-        adminPage: '/admin/applications',
-        description: 'Manage seller applications - view, approve, or reject applications'
-      },
-      'seller-verification': {
-        apiEndpoint: '/api/admin/sellers',
-        adminPage: '/admin/sellers',
-        description: 'Manage seller verification status, trust levels, and badges'
-      }
-    }
+    message: 'Welcome to KudiMall API'
   });
 });
 
@@ -199,55 +170,26 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'KudiMall API is running' });
 });
 
-// Test email configuration endpoint (for debugging SMTP issues)
-app.post('/api/test-email', async (req, res) => {
-  try {
-    const { sendMailWithFallback, getEmailSender } = require('./utils/emailConfig');
-    const testEmail = req.body.email || process.env.EMAIL_USER;
-
-    if (!testEmail) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'No email address provided for testing'
+// Test email - development only
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/test-email', async (req, res) => {
+    try {
+      const { sendMailWithFallback, getEmailSender } = require('./utils/emailConfig');
+      const testEmail = req.body.email || process.env.EMAIL_USER;
+      if (!testEmail) return res.status(400).json({ error: 'No email provided' });
+      await sendMailWithFallback({
+        from: getEmailSender(),
+        to: testEmail,
+        subject: 'KudiMall Email Test',
+        html: '<p>Email is working correctly.</p>'
       });
+      res.json({ status: 'success', message: 'Test email sent' });
+    } catch (error) {
+      console.error('Test email failed:', error);
+      res.status(500).json({ status: 'error', message: 'Email test failed' });
     }
-
-    console.log(`\n🧪 Testing email configuration by sending to: ${testEmail}`);
-
-    await sendMailWithFallback({
-      from: getEmailSender(),
-      to: testEmail,
-      subject: '✅ KudiMall Email Test - Configuration Working!',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #c8a45a;">🎉 Email Configuration Success!</h2>
-          <p>Your KudiMall email system is working correctly.</p>
-          <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
-          <p><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</p>
-          <hr>
-          <p style="color: #666; font-size: 12px;">This is an automated test email from KudiMall.</p>
-        </div>
-      `
-    });
-
-    res.json({
-      status: 'success',
-      message: `Test email sent successfully to ${testEmail}. Check your inbox!`,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('❌ Test email failed:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Email test failed. Check server logs for details.',
-      error: {
-        code: error.code,
-        message: error.message,
-        command: error.command
-      }
-    });
-  }
-});
+  });
+}
 
 // Database schema verification endpoint (for debugging - restricted to development)
 app.get('/api/debug/schema', async (req, res) => {
@@ -331,17 +273,19 @@ app.get('/api/debug/schema', async (req, res) => {
   }
 });
 
-// Manual seed endpoint (backup for auto-seed)
-app.post('/api/seed-database', async (req, res) => {
-  try {
-    const seedDb = require('./scripts/seedDb');
-    await seedDb();
-    res.json({ status: 'success', message: 'Database seeded successfully' });
-  } catch (error) {
-    console.error('Manual seed error:', error);
-    res.status(500).json({ status: 'error', message: error.message });
-  }
-});
+// Manual seed endpoint - development only
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/seed-database', async (req, res) => {
+    try {
+      const seedDb = require('./scripts/seedDb');
+      await seedDb();
+      res.json({ status: 'success', message: 'Database seeded successfully' });
+    } catch (error) {
+      console.error('Manual seed error:', error);
+      res.status(500).json({ status: 'error', message: 'Seed failed' });
+    }
+  });
+}
 
 // Manual migration endpoint (for fixing missing columns - restricted to development)
 app.post('/api/debug/migrate', async (req, res) => {
@@ -370,663 +314,191 @@ app.post('/api/debug/migrate', async (req, res) => {
   }
 });
 
-// Production migration endpoint for adding missing columns
-app.post('/api/run-missing-columns-migration', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    const fs = require('fs');
-    const path = require('path');
-    
-    const migrationPath = path.join(__dirname, 'migrations', 'add_missing_columns.sql');
-    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-    
-    await db.query(migrationSQL);
-    
-    res.json({ 
-      status: 'success', 
-      message: 'Missing columns migration completed successfully!' 
-    });
-  } catch (error) {
-    console.error('Migration error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Fix sellers without slugs (production endpoint)
-app.post('/api/fix-seller-slugs', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    // Get all sellers without slugs
-    const sellersWithoutSlugs = await db.all(
-      'SELECT id, name, shop_name FROM sellers WHERE slug IS NULL'
-    );
-    
-    if (sellersWithoutSlugs.length === 0) {
-      return res.json({ 
-        status: 'success', 
-        message: 'All sellers already have slugs!',
-        updated: 0
-      });
-    }
-    
-    // Generate slug function
-    const generateSlug = (text) => {
-      return text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-    };
-    
-    let updated = 0;
-    for (const seller of sellersWithoutSlugs) {
-      const baseName = seller.shop_name || seller.name || `seller-${seller.id}`;
-      let slug = generateSlug(baseName);
-      let counter = 1;
-      
-      // Ensure slug is unique
-      let slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
-      while (slugExists) {
-        slug = `${generateSlug(baseName)}-${counter}`;
-        slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
-        counter++;
-      }
-      
-      await db.run('UPDATE sellers SET slug = $1 WHERE id = $2', [slug, seller.id]);
-      updated++;
-    }
-    
-    res.json({ 
-      status: 'success', 
-      message: `Successfully generated slugs for ${updated} sellers!`,
-      updated
-    });
-  } catch (error) {
-    console.error('Slug fix error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Cleanup duplicate seed records (categories/sellers/products/users)
-app.post('/api/cleanup-seed-duplicates', async (req, res) => {
-  try {
-    const cleanupSeedDuplicates = require('./scripts/cleanupSeedDuplicates');
-    const summary = await cleanupSeedDuplicates();
-
-    res.json({
-      status: 'success',
-      message: 'Seed duplicate cleanup completed successfully',
-      summary
-    });
-  } catch (error) {
-    console.error('Seed duplicate cleanup error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
-});
-
-// Purge all known seeded test/sample records
-app.post('/api/purge-seed-data', async (req, res) => {
-  try {
-    const purgeSeedData = require('./scripts/purgeSeedData');
-    const summary = await purgeSeedData();
-
-    res.json({
-      status: 'success',
-      message: 'Seed data purged successfully',
-      summary
-    });
-  } catch (error) {
-    console.error('Seed purge error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
-});
-
-// Production cleanup: remove duplicates and limit to 5 sellers
-// ⚠️ WARNING: This permanently deletes data in production!
-app.post('/api/production-cleanup', async (req, res) => {
-  try {
-    // Simple authorization check - require secret key
-    const authHeader = req.headers['x-admin-secret'] || req.body.adminSecret;
-    const expectedSecret = process.env.ADMIN_SECRET || process.env.JWT_SECRET;
-    
-    if (!authHeader || authHeader !== expectedSecret) {
-      return res.status(403).json({
-        status: 'error',
-        message: 'Unauthorized - Invalid or missing admin secret'
-      });
-    }
-
-    const runProductionCleanup = require('./scripts/productionCleanup');
-    const summary = await runProductionCleanup();
-
-    res.json({
-      status: 'success',
-      message: 'Production cleanup completed successfully',
-      summary
-    });
-  } catch (error) {
-    console.error('Production cleanup error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
-});
-
-// Setup homepage (categories, featured sellers, featured products)
-app.post('/api/setup-homepage', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    // Generate slug function
-    const generateSlug = (text) => {
-      return text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-    };
-    
-    const results = {
-      categories: { updated: 0, errors: [] },
-      sellers: { updated: 0, errors: [] },
-      products: { updated: 0, errors: [] }
-    };
-    
-    // 1. Fix categories - add slugs and remove duplicates
-    const categories = await db.all('SELECT id, name FROM categories');
-    const uniqueCategories = new Map();
-    
-    for (const cat of categories) {
-      const key = cat.name.toLowerCase().trim();
-      if (!uniqueCategories.has(key)) {
-        uniqueCategories.set(key, cat);
-      } else {
-        // Delete duplicate
-        try {
-          await db.run('DELETE FROM categories WHERE id = $1', [cat.id]);
-        } catch (err) {
-          results.categories.errors.push(`Failed to delete duplicate category ${cat.id}: ${err.message}`);
-        }
-      }
-    }
-    
-    // Add slugs to remaining categories
-    for (const [catName, cat] of uniqueCategories) {
-      try {
-        const slug = generateSlug(cat.name);
-        await db.run('UPDATE categories SET slug = $1 WHERE id = $2', [slug, cat.id]);
-        results.categories.updated++;
-      } catch (err) {
-        results.categories.errors.push(`Failed to update category ${cat.id}: ${err.message}`);
-      }
-    }
-    
-    // 2. Mark top sellers as featured (high trust level + verified)
+// Production migration endpoint - development only
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/run-missing-columns-migration', async (req, res) => {
     try {
-      const topSellers = await db.all(`
-        SELECT id FROM sellers 
-        WHERE is_verified = TRUE 
-        ORDER BY trust_level DESC, total_sales DESC 
-        LIMIT 10
-      `);
-      
-      for (const seller of topSellers) {
-        await db.run('UPDATE sellers SET trust_level = 5 WHERE id = $1', [seller.id]);
-        results.sellers.updated++;
-      }
-    } catch (err) {
-      results.sellers.errors.push(`Failed to mark sellers as featured: ${err.message}`);
-    }
-    
-    // 3. Mark some products as featured
-    try {
-      const products = await db.all(`
-        SELECT p.id 
-        FROM products p
-        JOIN sellers s ON p.seller_id = s.id
-        WHERE s.is_verified = TRUE AND p.is_available = TRUE
-        ORDER BY RANDOM()
-        LIMIT 12
-      `);
-      
-      for (const product of products) {
-        await db.run('UPDATE products SET is_featured = TRUE WHERE id = $1', [product.id]);
-        results.products.updated++;
-      }
-    } catch (err) {
-      results.products.errors.push(`Failed to mark products as featured: ${err.message}`);
-    }
-    
-    res.json({ 
-      status: 'success', 
-      message: 'Homepage setup completed!',
-      results
-    });
-  } catch (error) {
-    console.error('Homepage setup error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Add more marketplace categories
-app.post('/api/add-more-categories', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    const generateSlug = (text) => {
-      return text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-    };
-    
-    const newCategories = [
-      { name: 'Home & Garden', description: 'Furniture, decor, and garden supplies' },
-      { name: 'Beauty & Health', description: 'Cosmetics, skincare, and wellness products' },
-      { name: 'Sports & Outdoors', description: 'Fitness equipment and outdoor gear' },
-      { name: 'Toys & Games', description: 'Toys, games, and hobby items' },
-      { name: 'Books & Media', description: 'Books, music, movies, and more' },
-      { name: 'Automotive', description: 'Car parts and accessories' },
-      { name: 'Baby & Kids', description: 'Baby products and children\'s items' },
-      { name: 'Pets', description: 'Pet supplies and accessories' },
-      { name: 'Office Supplies', description: 'Stationery and office equipment' },
-      { name: 'Jewelry & Watches', description: 'Jewelry, watches, and accessories' }
-    ];
-    
-    let added = 0;
-    let skipped = 0;
-    
-    for (const category of newCategories) {
-      try {
-        // Check if category exists
-        const existing = await db.get('SELECT id FROM categories WHERE name = $1', [category.name]);
-        
-        if (existing) {
-          skipped++;
-          continue;
-        }
-        
-        const slug = generateSlug(category.name);
-        await db.run(
-          'INSERT INTO categories (name, description, slug) VALUES ($1, $2, $3)',
-          [category.name, category.description, slug]
-        );
-        added++;
-      } catch (err) {
-        console.error(`Failed to add category ${category.name}:`, err);
-      }
-    }
-    
-    res.json({ 
-      status: 'success', 
-      message: `Added ${added} new categories (${skipped} already existed)`,
-      added,
-      skipped
-    });
-  } catch (error) {
-    console.error('Add categories error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Fix featured products - clear all and mark 12 new ones
-app.post('/api/fix-featured-products', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    // First, clear all featured products
-    await db.run('UPDATE products SET is_featured = FALSE WHERE is_featured = TRUE');
-    
-    // Then mark 12 random products from verified sellers as featured
-    const products = await db.all(`
-      SELECT p.id 
-      FROM products p
-      JOIN sellers s ON p.seller_id = s.id
-      WHERE s.is_verified = TRUE AND p.is_available = TRUE
-      ORDER BY RANDOM()
-      LIMIT 12
-    `);
-    
-    let updated = 0;
-    for (const product of products) {
-      const result = await db.run('UPDATE products SET is_featured = TRUE WHERE id = $1', [product.id]);
-      updated++;
-    }
-    
-    // Verify
-    const featuredCount = await db.get('SELECT COUNT(*) as count FROM products WHERE is_featured = TRUE');
-    
-    res.json({ 
-      status: 'success', 
-      message: `Marked ${updated} products as featured`,
-      updated,
-      verified: featuredCount.count
-    });
-  } catch (error) {
-    console.error('Fix featured products error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Debug: Check featured products directly
-app.get('/api/debug-featured', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    const featured = await db.all('SELECT id, name, seller_id, is_featured FROM products WHERE is_featured = TRUE LIMIT 20');
-    const total = await db.get('SELECT COUNT(*) as count FROM products');
-    const featuredCount = await db.get('SELECT COUNT(*) as count FROM products WHERE is_featured = TRUE');
-    
-    // Check the full query with joins
-    const featuredWithJoins = await db.all(`
-      SELECT p.id, p.name, p.seller_id, p.category_id, p.is_featured,
-             s.id as seller_exists, c.id as category_exists
-      FROM products p
-      LEFT  JOIN sellers s ON p.seller_id = s.id
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE p.is_featured = TRUE
-      LIMIT 20
-    `);
-    
-    res.json({ 
-      totalProducts: total.count,
-      featuredCount: featuredCount.count,
-      featured,
-      featuredWithJoins
-    });
-  } catch (error) {
-    console.error('Debug featured error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Fix products with null category_id
-app.post('/api/fix-product-categories', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    // Get all categories
-    const categories = await db.all('SELECT id FROM categories');
-    if (categories.length === 0) {
-      return res.status(400).json({ error: 'No categories found' });
-    }
-    
-    // Get products with null category_id
-    const productsWithoutCategory = await db.all('SELECT id, name FROM products WHERE category_id IS NULL');
-    
-    let updated = 0;
-    for (const product of productsWithoutCategory) {
-      // Assign a random category
-      const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-      await db.run('UPDATE products SET category_id = $1 WHERE id = $2', [randomCategory.id, product.id]);
-      updated++;
-    }
-    
-    res.json({ 
-      status: 'success',
-      message: `Fixed ${updated} products with null category_id`,
-      updated
-    });
-  } catch (error) {
-    console.error('Fix product categories error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
-
-// Add missing cart_items columns
-app.post('/api/fix-cart-items-columns', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    // Add saved_for_later column if it doesn't exist
-    try {
-      await db.run(`
-        ALTER TABLE cart_items 
-        ADD COLUMN IF NOT EXISTS saved_for_later BOOLEAN DEFAULT FALSE
-      `);
+      const db = require('./models/database');
+      const migrationPath = path.join(__dirname, 'migrations', 'add_missing_columns.sql');
+      const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+      await db.query(migrationSQL);
+      res.json({ status: 'success', message: 'Migration completed' });
     } catch (error) {
-      console.log('saved_for_later column might already exist or error:', error.message);
+      console.error('Migration error:', error);
+      res.status(500).json({ status: 'error', message: 'Migration failed' });
     }
-    
-    // Add updated_at column if it doesn't exist
+  });
+}
+
+// ============================================================
+// ADMIN / DEBUG / MIGRATION ENDPOINTS — Development only
+// ============================================================
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/fix-seller-slugs', async (req, res) => {
     try {
-      await db.run(`
-        ALTER TABLE cart_items 
-        ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      `);
-    } catch (error) {
-      console.log('updated_at column might already exist or error:', error.message);
-    }
-    
-    res.json({ 
-      status: 'success',
-      message: 'Cart items columns updated successfully'
-    });
-  } catch (error) {
-    console.error('Fix cart items columns error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
+      const db = require('./models/database');
+      const sellersWithoutSlugs = await db.all('SELECT id, name, shop_name FROM sellers WHERE slug IS NULL');
+      if (sellersWithoutSlugs.length === 0) return res.json({ status: 'success', message: 'All sellers already have slugs!', updated: 0 });
+      const generateSlug = (text) => text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+      let updated = 0;
+      for (const seller of sellersWithoutSlugs) {
+        const baseName = seller.shop_name || seller.name || `seller-${seller.id}`;
+        let slug = generateSlug(baseName);
+        let counter = 1;
+        let slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]);
+        while (slugExists) { slug = `${generateSlug(baseName)}-${counter}`; slugExists = await db.get('SELECT id FROM sellers WHERE slug = $1', [slug]); counter++; }
+        await db.run('UPDATE sellers SET slug = $1 WHERE id = $2', [slug, seller.id]);
+        updated++;
+      }
+      res.json({ status: 'success', message: `Generated slugs for ${updated} sellers`, updated });
+    } catch (error) { console.error('Slug fix error:', error); res.status(500).json({ status: 'error', message: 'Slug fix failed' }); }
+  });
 
-// Fix product slugs
-app.post('/api/fix-product-slugs', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    const generateSlug = (text, id) => {
-      const baseSlug = text
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-      return `${baseSlug}-${id}`;
-    };
-    
-    // Get all products without slugs
-    const products = await db.all('SELECT id, name FROM products WHERE slug IS NULL');
-    
-    let updated = 0;
-    for (const product of products) {
-      const slug = generateSlug(product.name, product.id);
-      await db.run('UPDATE products SET slug = $1 WHERE id = $2', [slug, product.id]);
-      updated++;
-    }
-    
-    res.json({ 
-      status: 'success',
-      message: `Generated slugs for ${updated} products`,
-      updated
-    });
-  } catch (error) {
-    console.error('Fix product slugs error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
+  app.post('/api/cleanup-seed-duplicates', async (req, res) => {
+    try { const fn = require('./scripts/cleanupSeedDuplicates'); const summary = await fn(); res.json({ status: 'success', summary }); }
+    catch (error) { console.error('Cleanup error:', error); res.status(500).json({ status: 'error', message: 'Cleanup failed' }); }
+  });
 
-// Fix existing cart items with NULL saved_for_later
-app.post('/api/fix-existing-cart-items', async (req, res) => {
-  try {
-    const db = require('./models/database');
-    
-    // Update all cart items with NULL saved_for_later to false
-    const result = await db.run(`
-      UPDATE cart_items 
-      SET saved_for_later = false 
-      WHERE saved_for_later IS NULL
-    `);
-    
-    res.json({ 
-      status: 'success',
-      message: 'Existing cart items updated successfully',
-      updated: result.changes || 0
-    });
-  } catch (error) {
-    console.error('Fix existing cart items error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
+  app.post('/api/purge-seed-data', async (req, res) => {
+    try { const fn = require('./scripts/purgeSeedData'); const summary = await fn(); res.json({ status: 'success', summary }); }
+    catch (error) { console.error('Purge error:', error); res.status(500).json({ status: 'error', message: 'Purge failed' }); }
+  });
 
-// Debug email configuration (safe - doesn't expose credentials)
-app.get('/api/debug/email-config', async (req, res) => {
-  try {
-    const hasEmailUser = !!process.env.EMAIL_USER;
-    const hasEmailPassword = !!process.env.EMAIL_PASSWORD;
-    const emailUser = process.env.EMAIL_USER ? 
-      `${process.env.EMAIL_USER.substring(0, 3)}...${process.env.EMAIL_USER.substring(process.env.EMAIL_USER.length - 5)}` : 
-      'NOT_SET';
-    const isGmail = process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com');
-    const isPlaceholder = 
-      process.env.EMAIL_USER === 'your-email@gmail.com' ||
-      process.env.EMAIL_PASSWORD === 'your-app-password' ||
-      process.env.EMAIL_PASSWORD === 'your-password' ||
-      process.env.EMAIL_PASSWORD === 'your-16-character-app-password';
-    
-    const frontendUrl = process.env.FRONTEND_URL || 'NOT_SET';
-    const resolvedFrontendUrl = getFrontendBaseUrl();
-    const smtpConfig = getSmtpConfig();
-    
-    res.json({
-      status: 'success',
-      configuration: {
-        hasEmailUser,
-        hasEmailPassword,
-        emailUserPreview: emailUser,
-        isGmail,
-        isPlaceholder,
-        frontendUrl,
-        resolvedFrontendUrl,
-        smtp: {
-          host: smtpConfig.host,
-          port: smtpConfig.port,
-          secure: smtpConfig.secure
-        },
+  app.post('/api/production-cleanup', async (req, res) => {
+    try {
+      const authHeader = req.headers['x-admin-secret'] || req.body.adminSecret;
+      const expectedSecret = process.env.ADMIN_SECRET || process.env.JWT_SECRET;
+      if (!authHeader || authHeader !== expectedSecret) return res.status(403).json({ error: 'Unauthorized' });
+      const fn = require('./scripts/productionCleanup'); const summary = await fn(); res.json({ status: 'success', summary });
+    } catch (error) { console.error('Cleanup error:', error); res.status(500).json({ status: 'error', message: 'Cleanup failed' }); }
+  });
+
+  app.post('/api/setup-homepage', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      const generateSlug = (text) => text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+      // Fix category slugs
+      const categories = await db.all('SELECT id, name FROM categories');
+      for (const cat of categories) { await db.run('UPDATE categories SET slug = $1 WHERE id = $2', [generateSlug(cat.name), cat.id]); }
+      // Mark top sellers
+      const topSellers = await db.all('SELECT id FROM sellers WHERE is_verified = TRUE ORDER BY trust_level DESC LIMIT 10');
+      for (const s of topSellers) { await db.run('UPDATE sellers SET trust_level = 5 WHERE id = $1', [s.id]); }
+      // Mark featured products
+      const products = await db.all('SELECT p.id FROM products p JOIN sellers s ON p.seller_id = s.id WHERE s.is_verified = TRUE AND p.is_available = TRUE ORDER BY RANDOM() LIMIT 12');
+      for (const p of products) { await db.run('UPDATE products SET is_featured = TRUE WHERE id = $1', [p.id]); }
+      res.json({ status: 'success', message: 'Homepage setup completed' });
+    } catch (error) { console.error('Homepage setup error:', error); res.status(500).json({ status: 'error', message: 'Setup failed' }); }
+  });
+
+  app.post('/api/add-more-categories', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      const generateSlug = (text) => text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim();
+      const cats = [
+        { name: 'Home & Garden', description: 'Furniture, decor, and garden supplies' },
+        { name: 'Beauty & Health', description: 'Cosmetics, skincare, and wellness products' },
+        { name: 'Sports & Outdoors', description: 'Fitness equipment and outdoor gear' },
+        { name: 'Toys & Games', description: 'Toys, games, and hobby items' },
+        { name: 'Books & Media', description: 'Books, music, movies, and more' },
+        { name: 'Automotive', description: 'Car parts and accessories' },
+        { name: 'Baby & Kids', description: 'Baby products and children\'s items' },
+        { name: 'Pets', description: 'Pet supplies and accessories' },
+        { name: 'Office Supplies', description: 'Stationery and office equipment' },
+        { name: 'Jewelry & Watches', description: 'Jewelry, watches, and accessories' }
+      ];
+      let added = 0;
+      for (const c of cats) {
+        const exists = await db.get('SELECT id FROM categories WHERE name = $1', [c.name]);
+        if (!exists) { await db.run('INSERT INTO categories (name, description, slug) VALUES ($1, $2, $3)', [c.name, c.description, generateSlug(c.name)]); added++; }
+      }
+      res.json({ status: 'success', added });
+    } catch (error) { console.error('Add categories error:', error); res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.post('/api/fix-featured-products', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      await db.run('UPDATE products SET is_featured = FALSE WHERE is_featured = TRUE');
+      const products = await db.all('SELECT p.id FROM products p JOIN sellers s ON p.seller_id = s.id WHERE s.is_verified = TRUE AND p.is_available = TRUE ORDER BY RANDOM() LIMIT 12');
+      for (const p of products) { await db.run('UPDATE products SET is_featured = TRUE WHERE id = $1', [p.id]); }
+      res.json({ status: 'success', updated: products.length });
+    } catch (error) { console.error('Fix featured error:', error); res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.get('/api/debug-featured', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      const featured = await db.all('SELECT id, name, seller_id FROM products WHERE is_featured = TRUE LIMIT 20');
+      const total = await db.get('SELECT COUNT(*) as count FROM products');
+      res.json({ totalProducts: total.count, featured });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.post('/api/fix-product-categories', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      const categories = await db.all('SELECT id FROM categories');
+      if (categories.length === 0) return res.status(400).json({ error: 'No categories found' });
+      const products = await db.all('SELECT id FROM products WHERE category_id IS NULL');
+      for (const p of products) { await db.run('UPDATE products SET category_id = $1 WHERE id = $2', [categories[Math.floor(Math.random() * categories.length)].id, p.id]); }
+      res.json({ status: 'success', updated: products.length });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.post('/api/fix-cart-items-columns', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      await db.run('ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS saved_for_later BOOLEAN DEFAULT FALSE');
+      await db.run('ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+      res.json({ status: 'success', message: 'Cart columns updated' });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.post('/api/fix-product-slugs', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      const products = await db.all('SELECT id, name FROM products WHERE slug IS NULL');
+      for (const p of products) { const slug = p.name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').trim() + '-' + p.id; await db.run('UPDATE products SET slug = $1 WHERE id = $2', [slug, p.id]); }
+      res.json({ status: 'success', updated: products.length });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.post('/api/fix-existing-cart-items', async (req, res) => {
+    try {
+      const db = require('./models/database');
+      await db.run('UPDATE cart_items SET saved_for_later = false WHERE saved_for_later IS NULL');
+      res.json({ status: 'success' });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
+
+  app.get('/api/debug/email-config', async (req, res) => {
+    try {
+      const smtpConfig = getSmtpConfig();
+      res.json({
+        hasEmailUser: !!process.env.EMAIL_USER,
+        hasEmailPassword: !!process.env.EMAIL_PASSWORD,
+        smtp: { host: smtpConfig.host, port: smtpConfig.port, secure: smtpConfig.secure },
         environment: process.env.NODE_ENV || 'development'
-      },
-      diagnosis: hasEmailUser && hasEmailPassword && !isPlaceholder ? 
-        'Email configured' : 
-        'Email not properly configured'
-    });
-  } catch (error) {
-    console.error('Debug email config error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
+      });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Failed' }); }
+  });
 
-// Test email sending
-app.post('/api/debug/test-email', async (req, res) => {
-  try {
-    const { to } = req.body;
-    
-    if (!to) {
-      return res.status(400).json({ 
-        status: 'error', 
-        message: 'Please provide email address in "to" field' 
-      });
-    }
-    
-    const transporter = createEmailTransporter();
-    const smtpConfig = getSmtpConfig();
-    const isGmail = !!(process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com'));
-    
-    // Try to send test email
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: to,
-      subject: 'KudiMall Test Email',
-      html: '<p>This is a test email from KudiMall. If you received this, email is working correctly!</p>'
-    };
-    
+  app.post('/api/debug/test-email', async (req, res) => {
     try {
-      const info = await transporter.sendMail(mailOptions);
-      res.json({
-        status: 'success',
-        message: 'Test email sent successfully',
-        messageId: info.messageId,
-        config: {
-          isGmail,
-          host: isGmail ? 'gmail' : smtpConfig.host,
-          port: isGmail ? 'default' : smtpConfig.port,
-          secure: isGmail ? 'managed-by-gmail' : smtpConfig.secure,
-          from: process.env.EMAIL_USER
-        }
-      });
-    } catch (sendError) {
-      res.json({
-        status: 'error',
-        message: 'Failed to send test email',
-        error: sendError.message,
-        code: sendError.code,
-        command: sendError.command,
-        config: {
-          isGmail,
-          host: isGmail ? 'gmail' : smtpConfig.host,
-          port: isGmail ? 'default' : smtpConfig.port,
-          secure: isGmail ? 'managed-by-gmail' : smtpConfig.secure,
-          hasHost: !!process.env.EMAIL_HOST,
-          hasPort: !!process.env.EMAIL_PORT,
-          hasSecure: !!process.env.EMAIL_SECURE
-        }
-      });
-    }
-  } catch (error) {
-    console.error('Test email error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message
-    });
-  }
-});
+      const { to } = req.body;
+      if (!to) return res.status(400).json({ error: 'Provide "to" field' });
+      const transporter = createEmailTransporter();
+      const info = await transporter.sendMail({ from: process.env.EMAIL_USER, to, subject: 'KudiMall Test', html: '<p>Email working!</p>' });
+      res.json({ status: 'success', messageId: info.messageId });
+    } catch (error) { res.status(500).json({ status: 'error', message: 'Send failed' }); }
+  });
+} // END development-only admin endpoints
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+  const status = err.status || 500;
+  console.error(`[${new Date().toISOString()}] ${req.method} ${req.path} - Error:`, err.message);
+  res.status(status).json({ error: status >= 500 ? 'Something went wrong!' : err.message });
 });
 
 app.listen(PORT, async () => {

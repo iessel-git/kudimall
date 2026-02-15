@@ -23,7 +23,8 @@ const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
 const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 60 * 60 * 1000;
 
 const generateVerificationCode = () => {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  const crypto = require('crypto');
+  return String(crypto.randomInt(100000, 999999));
 };
 
 const getResendState = (record) => {
@@ -270,9 +271,9 @@ router.post('/login', async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { id: buyer.id, email: buyer.email, name: buyer.name },
+      { id: buyer.id, email: buyer.email, name: buyer.name, type: 'buyer' },
       JWT_SECRET,
-      { expiresIn: JWT_EXPIRY }
+      { expiresIn: '7d' }
     );
 
     res.json({

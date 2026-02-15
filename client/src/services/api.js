@@ -13,7 +13,7 @@ const api = axios.create({
   },
 });
 
-console.log('🔗 API Base URL:', API_BASE_URL);
+// API Base URL configured
 
 export { API_BASE_URL };
 

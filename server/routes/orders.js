@@ -185,12 +185,12 @@ router.post('/', optionalBuyerAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Error creating order:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to create order' });
   }
 });
 
-// Get order by order number
-router.get('/:order_number', async (req, res) => {
+// Get order by order number (requires auth or matching buyer email)
+router.get('/:order_number', optionalBuyerAuth, async (req, res) => {
   try {
     const order = await db.get(
       `SELECT o.*, p.name as product_name, p.image_url as product_image,
@@ -205,10 +205,23 @@ router.get('/:order_number', async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
+
+    // Only allow the buyer who placed the order or authenticated users to view
+    if (req.buyer) {
+      if (order.buyer_id && order.buyer_id !== req.buyer.id) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+    }
+    
+    // Redact sensitive fields for unauthenticated requests
+    if (!req.buyer) {
+      delete order.buyer_phone;
+      delete order.delivery_address;
+    }
     
     res.json(order);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Failed to fetch order' });
   }
 });
 
