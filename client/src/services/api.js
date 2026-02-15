@@ -61,6 +61,8 @@ export const updateSellerApplication = (id, data) => api.patch(`/seller-applicat
 // Seller Authentication
 export const sellerSignup = (data) => api.post('/auth/seller/signup', data);
 export const sellerLogin = (data) => api.post('/auth/seller/login', data);
+export const sellerVerifyCode = (data) => api.post('/auth/seller/verify-code', data);
+export const sellerResendVerification = (data) => api.post('/auth/seller/resend-verification', data);
 export const getSellerProfile = () => {
   const token = localStorage.getItem('seller_token');
   return api.get('/auth/seller/me', {
@@ -167,6 +169,8 @@ export const deleteDeal = (id) => {
 // Buyer Authentication
 export const buyerSignup = (data) => api.post('/buyer-auth/signup', data);
 export const buyerLogin = (data) => api.post('/buyer-auth/login', data);
+export const buyerVerifyCode = (data) => api.post('/buyer-auth/verify-code', data);
+export const buyerResendVerification = (data) => api.post('/buyer-auth/resend-verification', data);
 export const buyerForgotPassword = (data) => api.post('/buyer-auth/forgot-password', data);
 export const buyerResetPassword = (data) => api.post('/buyer-auth/reset-password', data);
 export const getBuyerProfile = () => {

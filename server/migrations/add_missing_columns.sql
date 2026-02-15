@@ -23,6 +23,8 @@ ALTER TABLE sellers ADD COLUMN IF NOT EXISTS password VARCHAR(255);
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_sent_count INTEGER DEFAULT 0;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS email_verification_last_sent_at TIMESTAMP;
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS last_login TIMESTAMP;
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS total_sales INTEGER DEFAULT 0;
 ALTER TABLE sellers ADD COLUMN IF NOT EXISTS rating NUMERIC(3,2);
@@ -84,6 +86,11 @@ CREATE TABLE IF NOT EXISTS buyers (
     city VARCHAR(100),
     state VARCHAR(100),
     zip_code VARCHAR(20),
+    email_verified BOOLEAN DEFAULT FALSE,
+    email_verification_token VARCHAR(255),
+    email_verification_expires TIMESTAMP,
+    email_verification_sent_count INTEGER DEFAULT 0,
+    email_verification_last_sent_at TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
     reset_token VARCHAR(255),
     reset_token_expiry TIMESTAMP,
@@ -91,6 +98,12 @@ CREATE TABLE IF NOT EXISTS buyers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE buyers ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE buyers ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(255);
+ALTER TABLE buyers ADD COLUMN IF NOT EXISTS email_verification_expires TIMESTAMP;
+ALTER TABLE buyers ADD COLUMN IF NOT EXISTS email_verification_sent_count INTEGER DEFAULT 0;
+ALTER TABLE buyers ADD COLUMN IF NOT EXISTS email_verification_last_sent_at TIMESTAMP;
 
 -- ============================================================================
 -- DELIVERY_USERS TABLE - Create table if not exists

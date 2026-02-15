@@ -91,25 +91,25 @@ const SellerSignupPage = () => {
               textAlign: 'center'
             }}>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
-                {emailSent ? '✉️ Verification Email Sent!' : '⚠️ Account Created - Email Not Sent'}
+                {emailSent ? '✉️ Verification Code Sent!' : '⚠️ Account Created - Email Not Sent'}
               </h3>
               <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>{successMessage}</p>
               {emailSent ? (
                 <p style={{ fontSize: '0.9rem', color: '#66bb6a' }}>
-                  Please check your email (including spam folder) and click the verification link to activate your account.
+                  Please check your email (including spam folder) for your 6-digit verification code.
                 </p>
               ) : (
                 <div>
                   <p style={{ fontSize: '0.9rem', marginBottom: '15px' }}>
-                    You can try to resend the verification email from the verification page.
+                    You can try to resend the verification code from the verification page.
                   </p>
                   <Link 
-                    to="/seller/verify" 
+                    to="/seller/verify-code" 
                     state={{ email: userEmail }}
                     className="btn-primary"
                     style={{ marginRight: '10px' }}
                   >
-                    Resend Verification Email
+                    Resend Verification Code
                   </Link>
                 </div>
               )}

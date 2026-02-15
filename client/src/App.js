@@ -20,10 +20,11 @@ import SellerDashboardPage from './pages/SellerDashboardPage';
 import SellerApplicationPage from './pages/SellerApplicationPage';
 import SellerLoginPage from './pages/SellerLoginPage';
 import SellerSignupPage from './pages/SellerSignupPage';
-import SellerEmailVerificationPage from './pages/SellerEmailVerificationPage';
+import SellerVerifyCodePage from './pages/SellerVerifyCodePage';
 import SellerDashboard from './pages/SellerDashboard';
 import BuyerLoginPage from './pages/BuyerLoginPage';
 import BuyerSignupPage from './pages/BuyerSignupPage';
+import BuyerVerifyCodePage from './pages/BuyerVerifyCodePage';
 import BuyerForgotPasswordPage from './pages/BuyerForgotPasswordPage';
 import BuyerResetPasswordPage from './pages/BuyerResetPasswordPage';
 import BuyerDashboardPage from './pages/BuyerDashboardPage';
@@ -64,11 +65,13 @@ function App() {
             <Route path="/seller-application" element={<SellerApplicationPage />} />
             <Route path="/seller/login" element={<SellerLoginPage />} />
             <Route path="/seller/signup" element={<SellerSignupPage />} />
-            <Route path="/seller/verify-email" element={<SellerEmailVerificationPage />} />
-            <Route path="/seller/verify" element={<SellerEmailVerificationPage />} />
+            <Route path="/seller/verify-email" element={<SellerVerifyCodePage />} />
+            <Route path="/seller/verify" element={<SellerVerifyCodePage />} />
+            <Route path="/seller/verify-code" element={<SellerVerifyCodePage />} />
             <Route path="/seller/dashboard" element={<SellerDashboard />} />
             <Route path="/buyer/login" element={<BuyerLoginPage />} />
             <Route path="/buyer/signup" element={<BuyerSignupPage />} />
+            <Route path="/buyer/verify-code" element={<BuyerVerifyCodePage />} />
             <Route path="/buyer/forgot-password" element={<BuyerForgotPasswordPage />} />
             <Route path="/buyer/reset-password" element={<BuyerResetPasswordPage />} />
             <Route path="/buyer/dashboard" element={<BuyerDashboardPage />} />

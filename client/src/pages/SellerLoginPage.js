@@ -26,6 +26,7 @@ const SellerLoginPage = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
 
     try {
       const response = await sellerLogin(formData);
@@ -74,7 +75,7 @@ const SellerLoginPage = () => {
         setError('');
       }
     } catch (err) {
-      alert('Failed to resend verification email. Please try again.');
+      alert('Failed to resend verification code. Please try again.');
     } finally {
       setResendingEmail(false);
     }
@@ -108,8 +109,13 @@ const SellerLoginPage = () => {
                       fontSize: '0.9rem'
                     }}
                   >
-                    {resendingEmail ? 'Sending...' : '📧 Resend Verification Email'}
+                    {resendingEmail ? 'Sending...' : '📧 Resend Verification Code'}
                   </button>
+                  <div style={{ marginTop: '10px' }}>
+                    <Link to="/seller/verify-code" state={{ email: formData.email }}>
+                      Enter Verification Code
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>

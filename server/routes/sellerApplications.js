@@ -441,9 +441,10 @@ const createSellerAccountFromApplication = async (application) => {
       counter++;
     }
 
-    // Generate email verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+    // Generate email verification code
+    const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
+    const verificationExpires = new Date(Date.now() + 10 * 60 * 1000);
+    const verificationSentAt = new Date();
 
     // Create seller account
     const fullName = `${application.first_name} ${application.last_name}`;
@@ -451,8 +452,9 @@ const createSellerAccountFromApplication = async (application) => {
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, shop_name, 
         is_active, is_verified, email_verified, trust_level,
-        email_verification_token, email_verification_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, FALSE, 0, $9, $10)
+        email_verification_token, email_verification_expires,
+        email_verification_sent_count, email_verification_last_sent_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, FALSE, 0, $9, $10, $11, $12)
     `, [
       fullName,
       slug,
@@ -462,14 +464,16 @@ const createSellerAccountFromApplication = async (application) => {
       `${application.city}, ${application.state}, ${application.country}`,
       application.store_description,
       application.store_name,
-      verificationToken,
-      verificationExpires.toISOString()
+      verificationCode,
+      verificationExpires.toISOString(),
+      1,
+      verificationSentAt.toISOString()
     ]);
 
     // Send welcome email with credentials
     const baseUrl = getFrontendBaseUrl();
-    const loginUrl = `${baseUrl}/seller-login`;
-    const verifyUrl = `${baseUrl}/seller/verify?token=${verificationToken}`;
+    const loginUrl = `${baseUrl}/seller/login`;
+    const verifyUrl = `${baseUrl}/seller/verify-code`;
 
     try {
       await sendMailWithFallback({
@@ -511,20 +515,24 @@ const createSellerAccountFromApplication = async (application) => {
                 <div class="warning">
                   <strong>⚠️ Important Security Steps:</strong>
                   <ol>
-                    <li>Verify your email address by clicking the button below</li>
+                    <li>Verify your email address using the code below</li>
                     <li>Login with your temporary password</li>
                     <li>Change your password immediately after first login</li>
                   </ol>
                 </div>
 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="${verifyUrl}" class="button">✉️ Verify Email</a>
+                  <div style="display: inline-block; background: #0f1115; color: #c8a45a; padding: 14px 24px; border-radius: 8px; font-size: 24px; letter-spacing: 4px; font-weight: bold;">
+                    ${verificationCode}
+                  </div>
+                  <p style="margin-top: 12px;">Code expires in 10 minutes.</p>
+                  <a href="${verifyUrl}" class="button">✉️ Enter Verification Code</a>
                   <a href="${loginUrl}" class="button">🚀 Login to Dashboard</a>
                 </div>
 
                 <h3>📋 Next Steps:</h3>
                 <ul>
-                  <li>✅ Verify your email address</li>
+                  <li>✅ Verify your email address with the code</li>
                   <li>✅ Login and change your password</li>
                   <li>✅ Complete your seller profile</li>
                   <li>✅ Add your products</li>

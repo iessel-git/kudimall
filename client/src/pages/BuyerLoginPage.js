@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { buyerLogin } from '../services/api';
+import { buyerLogin, buyerResendVerification } from '../services/api';
 import '../styles/AuthPage.css';
 
 const BuyerLoginPage = () => {
@@ -12,6 +12,8 @@ const BuyerLoginPage = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const from = location.state?.from?.pathname || '/buyer/dashboard';
 
@@ -27,6 +29,7 @@ const BuyerLoginPage = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
 
     try {
       const response = await buyerLogin(formData);
@@ -34,9 +37,31 @@ const BuyerLoginPage = () => {
       localStorage.setItem('buyer_info', JSON.stringify(response.data.buyer));
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.');
+      if (err.response?.data?.requiresEmailVerification) {
+        setNeedsVerification(true);
+        setError(err.response?.data?.message || 'Please verify your email to continue.');
+      } else {
+        setError(err.response?.data?.error || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+
+    setResending(true);
+    try {
+      const response = await buyerResendVerification({ email: formData.email });
+      setError(response.data?.message || 'Verification code sent.');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to resend verification code.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -48,7 +73,36 @@ const BuyerLoginPage = () => {
             <h1>Welcome Back</h1>
             <p className="auth-subtitle">Log in to track your orders</p>
 
-            {error && <div className="error-banner">{error}</div>}
+            {error && (
+              <div className="error-banner">
+                {error}
+                {needsVerification && (
+                  <div style={{ marginTop: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={handleResendVerification}
+                      disabled={resending}
+                      style={{
+                        background: '#c8a45a',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      {resending ? 'Sending...' : '📧 Resend Verification Code'}
+                    </button>
+                    <div style={{ marginTop: '8px' }}>
+                      <Link to="/buyer/verify-code" state={{ email: formData.email }}>
+                        Enter Verification Code
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit}>
               <div className="form-group">

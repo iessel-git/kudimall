@@ -16,6 +16,10 @@ const BuyerSignupPage = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const from = location.state?.from?.pathname || '/buyer/dashboard';
 
@@ -49,6 +53,15 @@ const BuyerSignupPage = () => {
     try {
       const { confirmPassword, ...signupData } = formData;
       const response = await buyerSignup(signupData);
+
+      if (response.data.emailVerificationRequired) {
+        setSuccess(true);
+        setSuccessMessage(response.data.message);
+        setEmailSent(response.data.emailSent !== false);
+        setUserEmail(signupData.email);
+        return;
+      }
+
       localStorage.setItem('buyer_token', response.data.token);
       localStorage.setItem('buyer_info', JSON.stringify(response.data.buyer));
       navigate(from, { replace: true });
@@ -66,9 +79,51 @@ const BuyerSignupPage = () => {
           <h1>Create Your Account</h1>
           <p className="auth-subtitle">Join KudiMall and start shopping securely</p>
 
+          {success && (
+            <div className="success-message" style={{
+              background: emailSent ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 152, 0, 0.1)',
+              border: emailSent ? '2px solid rgba(76, 175, 80, 0.5)' : '2px solid rgba(255, 152, 0, 0.5)',
+              color: emailSent ? '#4caf50' : '#f57c00',
+              padding: '20px',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              textAlign: 'center'
+            }}>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
+                {emailSent ? '✉️ Verification Code Sent!' : '⚠️ Account Created - Email Not Sent'}
+              </h3>
+              <p style={{ marginBottom: '15px', lineHeight: '1.6' }}>{successMessage}</p>
+              {emailSent ? (
+                <p style={{ fontSize: '0.9rem', color: '#66bb6a' }}>
+                  Please check your email for your 6-digit verification code.
+                </p>
+              ) : (
+                <div>
+                  <p style={{ fontSize: '0.9rem', marginBottom: '15px' }}>
+                    You can resend the verification code from the verification page.
+                  </p>
+                  <Link
+                    to="/buyer/verify-code"
+                    state={{ email: userEmail }}
+                    className="btn-primary"
+                    style={{ marginRight: '10px' }}
+                  >
+                    Resend Verification Code
+                  </Link>
+                </div>
+              )}
+              <div style={{ marginTop: '20px' }}>
+                <Link to="/buyer/login" className="btn-secondary">
+                  Go to Login
+                </Link>
+              </div>
+            </div>
+          )}
+
           {error && <div className="error-banner">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
+          {!success && (
+            <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label htmlFor="name">Full Name *</label>
               <input
@@ -152,7 +207,8 @@ const BuyerSignupPage = () => {
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
-          </form>
+            </form>
+          )}
 
           <div className="auth-links">
             <p>

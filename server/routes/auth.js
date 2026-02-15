@@ -40,8 +40,32 @@ const EMAIL_SEND_TIMEOUT_MS = (() => {
   return parsed;
 })();
 
-// Helper function to send verification email with timeout
-const sendVerificationEmail = async (email, name, token) => {
+const EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES = 10;
+const EMAIL_VERIFICATION_RESEND_LIMIT = 3;
+const EMAIL_VERIFICATION_RESEND_WINDOW_MS = 60 * 60 * 1000;
+
+const generateVerificationCode = () => {
+  return String(Math.floor(100000 + Math.random() * 900000));
+};
+
+const getResendState = (record) => {
+  const lastSentAt = record.email_verification_last_sent_at
+    ? new Date(record.email_verification_last_sent_at)
+    : null;
+  const sentCount = Number.isInteger(record.email_verification_sent_count)
+    ? record.email_verification_sent_count
+    : 0;
+
+  if (!lastSentAt || Date.now() - lastSentAt.getTime() > EMAIL_VERIFICATION_RESEND_WINDOW_MS) {
+    return { sentCount: 0, canSend: true, remaining: EMAIL_VERIFICATION_RESEND_LIMIT };
+  }
+
+  const remaining = Math.max(EMAIL_VERIFICATION_RESEND_LIMIT - sentCount, 0);
+  return { sentCount, canSend: remaining > 0, remaining };
+};
+
+// Helper function to send verification code email with timeout
+const sendVerificationEmail = async (email, name, verificationCode) => {
   // Wrap email sending in a promise with timeout
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Email sending timeout - server took too long to respond')), EMAIL_SEND_TIMEOUT_MS);
@@ -75,12 +99,10 @@ const sendVerificationEmail = async (email, name, token) => {
         };
       }
 
-      const verificationUrl = `${FRONTEND_BASE_URL}/seller/verify?token=${token}`;
-      
       const mailOptions = {
         from: getEmailSender(),
         to: email,
-        subject: '🔐 Verify Your KudiMall Seller Email',
+        subject: '🔐 Your KudiMall Seller Verification Code',
         html: `
           <!DOCTYPE html>
           <html>
@@ -109,18 +131,19 @@ const sendVerificationEmail = async (email, name, token) => {
               <div class="content">
                 <h2>Hello ${name},</h2>
                 <p>Thank you for signing up as a seller on KudiMall!</p>
-                <p>To complete your registration and start selling, please verify your email address by clicking the button below:</p>
-                <div style="text-align: center;">
-                  <a href="${verificationUrl}" class="button">Verify Email Address</a>
+                <p>Use the verification code below to activate your account:</p>
+                <div style="text-align: center; margin: 20px 0;">
+                  <div style="display: inline-block; background: #0f1115; color: #c8a45a; padding: 14px 24px; border-radius: 8px; font-size: 24px; letter-spacing: 4px; font-weight: bold;">
+                    ${verificationCode}
+                  </div>
                 </div>
-                <p>Or copy and paste this link into your browser:</p>
-                <p style="word-break: break-all; color: #666; font-size: 12px;">${verificationUrl}</p>
+                <p>This code expires in ${EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES} minutes.</p>
                 <div class="warning">
                   <strong>⚠️ Security Notice:</strong>
                   <ul>
-                    <li>This verification link will expire in 24 hours</li>
+                    <li>This verification code will expire in ${EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES} minutes</li>
                     <li>If you didn't create an account with KudiMall, please ignore this email</li>
-                    <li>Never share this verification link with anyone</li>
+                    <li>Never share this verification code with anyone</li>
                   </ul>
                 </div>
               </div>
@@ -302,30 +325,45 @@ router.post('/seller/signup', async (req, res) => {
       counter++;
     }
 
-    // Generate email verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate email verification code
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = new Date(Date.now() + EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES * 60 * 1000);
+    const verificationSentAt = new Date();
 
     // Create seller with email_verified = FALSE
     // Note: shop_name defaults to seller's name
     const result = await db.run(`
       INSERT INTO sellers (
         name, slug, email, password, phone, location, description, shop_name, is_active,
-        email_verified, email_verification_token, email_verification_expires
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10)
-    `, [name, slug, email, hashedPassword, phone || null, location || null, description || null, name /* shop_name defaults to name */, verificationToken, verificationExpires.toISOString()]);
+        email_verified, email_verification_token, email_verification_expires,
+        email_verification_sent_count, email_verification_last_sent_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE, $9, $10, $11, $12)
+    `, [
+      name,
+      slug,
+      email,
+      hashedPassword,
+      phone || null,
+      location || null,
+      description || null,
+      name,
+      verificationCode,
+      verificationExpires.toISOString(),
+      1,
+      verificationSentAt.toISOString()
+    ]);
 
     // Send verification email
-    const emailResult = await sendVerificationEmail(email, name, verificationToken);
+    const emailResult = await sendVerificationEmail(email, name, verificationCode);
     const exposableErrorInfo = getExposableErrorInfo(emailResult);
 
     // Construct appropriate message based on email result
     let responseMessage;
     if (emailResult.success) {
-      responseMessage = 'Seller account created successfully! Please check your email to verify your account.';
+      responseMessage = 'Seller account created successfully! Please check your email for your verification code.';
     } else {
       const errorDetail = getUserFriendlyEmailErrorMessage(emailResult);
-      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} - you can use the "Resend Verification Email" option.`;
+      responseMessage = `Seller account created successfully, but the verification email could not be sent. ${errorDetail} - you can use the "Resend Verification Code" option.`;
     }
 
     res.status(201).json({
@@ -399,32 +437,52 @@ router.post('/seller/login', async (req, res) => {
 
     // Check if email is verified
     if (!seller.email_verified) {
-      // Ensure there is a fresh verification token available
-      let verificationToken = seller.email_verification_token;
-      const expiresAt = seller.email_verification_expires ? new Date(seller.email_verification_expires) : null;
-      const tokenExpired = !expiresAt || expiresAt.getTime() < Date.now();
+      const resendState = getResendState(seller);
+      const now = new Date();
+      let verificationCode = seller.email_verification_token;
+      let verificationExpires = seller.email_verification_expires ? new Date(seller.email_verification_expires) : null;
+      const codeExpired = !verificationExpires || verificationExpires.getTime() < now.getTime();
 
-      if (!verificationToken || tokenExpired) {
-        verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      if ((!verificationCode || codeExpired) && !resendState.canSend) {
+        return res.status(429).json({
+          error: 'Too many requests',
+          message: 'Too many verification attempts. Please wait before requesting another code.',
+          requiresEmailVerification: true
+        });
+      }
+
+      if (!verificationCode || codeExpired) {
+        verificationCode = generateVerificationCode();
+        verificationExpires = new Date(Date.now() + EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES * 60 * 1000);
+      }
+
+      if (resendState.canSend) {
         await db.run(
           `UPDATE sellers 
              SET email_verification_token = $1,
                  email_verification_expires = $2,
+                 email_verification_sent_count = $3,
+                 email_verification_last_sent_at = $4,
                  updated_at = CURRENT_TIMESTAMP
-           WHERE id = $3`,
-          [verificationToken, verificationExpires.toISOString(), seller.id]
+           WHERE id = $5`,
+          [
+            verificationCode,
+            verificationExpires.toISOString(),
+            resendState.sentCount + 1,
+            now.toISOString(),
+            seller.id
+          ]
         );
-      }
 
-      // Fire-and-forget: send email in background without waiting
-      sendVerificationEmail(seller.email, seller.name, verificationToken).catch(err => {
-        console.error('Background email send failed:', err);
-      });
+        // Fire-and-forget: send email in background without waiting
+        sendVerificationEmail(seller.email, seller.name, verificationCode).catch((err) => {
+          console.error('Background email send failed:', err);
+        });
+      }
 
       return res.status(403).json({ 
         error: 'Email not verified',
-        message: 'Please verify your email address before logging in. A verification link has been sent to your inbox.',
+        message: 'Please verify your email address before logging in. A verification code has been sent to your inbox.',
         requiresEmailVerification: true
       });
     }
@@ -601,7 +659,7 @@ router.get('/seller/verify-email', async (req, res) => {
     if (now > expiresAt) {
       return res.status(410).json({
         error: 'Token expired',
-        message: 'Verification link has expired. Please request a new verification email.',
+        message: 'Verification code has expired. Please request a new code.',
         expired: true
       });
     }
@@ -643,6 +701,90 @@ router.get('/seller/verify-email', async (req, res) => {
   }
 });
 
+// POST /api/auth/seller/verify-code - Verify seller email with code
+router.post('/seller/verify-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        error: 'Missing data',
+        message: 'Email and verification code are required'
+      });
+    }
+
+    const seller = await db.get(
+      'SELECT * FROM sellers WHERE email = $1',
+      [email]
+    );
+
+    if (!seller) {
+      return res.status(404).json({
+        error: 'Account not found',
+        message: 'No seller account found with this email'
+      });
+    }
+
+    if (seller.email_verified) {
+      return res.json({
+        success: true,
+        message: 'Email already verified. You can now log in.',
+        alreadyVerified: true
+      });
+    }
+
+    if (!seller.email_verification_token) {
+      return res.status(400).json({
+        error: 'No verification code',
+        message: 'Please request a new verification code.'
+      });
+    }
+
+    const expiresAt = new Date(seller.email_verification_expires);
+    if (expiresAt.getTime() < Date.now()) {
+      return res.status(410).json({
+        error: 'Code expired',
+        message: 'Verification code has expired. Please request a new one.',
+        expired: true
+      });
+    }
+
+    if (String(code).trim() !== String(seller.email_verification_token).trim()) {
+      return res.status(400).json({
+        error: 'Invalid code',
+        message: 'Verification code is invalid. Please try again.'
+      });
+    }
+
+    await db.run(
+      `UPDATE sellers 
+       SET email_verified = TRUE, 
+           email_verification_token = NULL, 
+           email_verification_expires = NULL,
+           email_verification_sent_count = 0,
+           email_verification_last_sent_at = NULL,
+           updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1`,
+      [seller.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Email verified successfully! You can now log in to your seller account.',
+      seller: {
+        name: seller.name,
+        email: seller.email
+      }
+    });
+  } catch (error) {
+    console.error('Error verifying code:', error);
+    res.status(500).json({
+      error: 'Verification failed',
+      message: error.message
+    });
+  }
+});
+
 // POST /api/auth/seller/resend-verification - Resend verification email
 router.post('/seller/resend-verification', async (req, res) => {
   try {
@@ -677,27 +819,44 @@ router.post('/seller/resend-verification', async (req, res) => {
       });
     }
 
-    // Generate new verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const resendState = getResendState(seller);
+    if (!resendState.canSend) {
+      return res.status(429).json({
+        error: 'Too many requests',
+        message: 'Too many verification attempts. Please wait before requesting another code.'
+      });
+    }
+
+    // Generate new verification code
+    const verificationCode = generateVerificationCode();
+    const verificationExpires = new Date(Date.now() + EMAIL_VERIFICATION_CODE_EXPIRY_MINUTES * 60 * 1000);
+    const sentAt = new Date();
 
     // Update seller with new token
     await db.run(
       `UPDATE sellers 
          SET email_verification_token = $1, 
            email_verification_expires = $2,
+           email_verification_sent_count = $3,
+           email_verification_last_sent_at = $4,
            updated_at = CURRENT_TIMESTAMP
-      WHERE id = $3`,
-      [verificationToken, verificationExpires.toISOString(), seller.id]
+      WHERE id = $5`,
+      [
+        verificationCode,
+        verificationExpires.toISOString(),
+        resendState.sentCount + 1,
+        sentAt.toISOString(),
+        seller.id
+      ]
     );
 
     // Send verification email
-    const emailResult = await sendVerificationEmail(email, seller.name, verificationToken);
+    const emailResult = await sendVerificationEmail(email, seller.name, verificationCode);
 
     if (emailResult.success) {
       res.json({
         success: true,
-        message: 'Verification email sent! Please check your inbox.'
+        message: 'Verification code sent! Please check your inbox.'
       });
     } else {
       // Get user-friendly error message (without trailing period)
