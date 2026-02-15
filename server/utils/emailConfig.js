@@ -174,8 +174,10 @@ const sendMailWithBrevoAPI = async (mailOptions) => {
     throw new Error('BREVO_API_KEY not set');
   }
 
-  // Parse "from" field - can be "Name <email>" or just "email"
-  let fromEmail = process.env.EMAIL_USER || 'kudimall@csetechsolution.com';
+  // For Brevo API, the sender must be a validated/authenticated sender address.
+  // EMAIL_USER is the SMTP login (e.g. a26abb001@smtp-brevo.com) which is NOT a valid sender.
+  // Use EMAIL_SENDER_ADDRESS for the actual "from" address, falling back to the verified domain email.
+  let fromEmail = process.env.EMAIL_SENDER_ADDRESS || 'kudimall@csetechsolution.com';
   let fromName = process.env.EMAIL_SENDER_NAME || 'KudiMall';
   
   if (typeof mailOptions.from === 'string') {
@@ -186,6 +188,11 @@ const sendMailWithBrevoAPI = async (mailOptions) => {
     } else if (mailOptions.from.includes('@')) {
       fromEmail = mailOptions.from;
     }
+  }
+  
+  // Safety: never use the SMTP login as sender for Brevo API
+  if (fromEmail.includes('smtp-brevo.com') || fromEmail.includes('smtp.brevo.com')) {
+    fromEmail = 'kudimall@csetechsolution.com';
   }
 
   const payload = {
@@ -270,11 +277,17 @@ const sendMailWithFallback = async (mailOptions) => {
 };
 
 const getEmailSender = () => {
-  const emailUser = process.env.EMAIL_USER || 'noreply@kudimall.com';
+  // Use EMAIL_SENDER_ADDRESS (the validated sender) instead of EMAIL_USER (SMTP login)
+  const senderAddress = process.env.EMAIL_SENDER_ADDRESS || process.env.EMAIL_USER || 'noreply@kudimall.com';
   const senderName = process.env.EMAIL_SENDER_NAME || 'KudiMall';
   
+  // Safety: never use the SMTP login as the visible sender
+  const safeAddress = (senderAddress.includes('smtp-brevo.com') || senderAddress.includes('smtp.brevo.com'))
+    ? 'kudimall@csetechsolution.com'
+    : senderAddress;
+  
   // Format as "KudiMall <email@example.com>" to hide raw email address
-  return `${senderName} <${emailUser}>`;
+  return `${senderName} <${safeAddress}>`;
 };
 
 module.exports = {
