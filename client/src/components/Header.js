@@ -120,7 +120,6 @@ const Header = () => {
                 ) : (
                   <Link to="/buyer/login" className="nav-link my-orders-link">My Orders</Link>
                 )}
-                <Link to="/seller/login" className="nav-link seller-login">Sell</Link>
               </nav>
             </div>
           </div>

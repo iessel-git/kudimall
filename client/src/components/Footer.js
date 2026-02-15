@@ -33,6 +33,7 @@ const Footer = () => {
           <div className="footer-section">
             <h4>For Sellers</h4>
             <ul>
+              <li><Link to="/seller/login">Seller Login</Link></li>
               <li><Link to="/start-selling">Start Selling</Link></li>
               <li><Link to="/seller-application">Apply Now</Link></li>
               <li><Link to="/seller-dashboard">Seller Dashboard</Link></li>
