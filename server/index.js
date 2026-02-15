@@ -21,6 +21,9 @@ if (fs.existsSync(serverEnvPath)) {
 // Initialize logger after dotenv config
 const logger = require('./utils/logger');
 
+// Detect production: NODE_ENV, RENDER env var, or DATABASE_URL
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' || !!process.env.RENDER || !!process.env.DATABASE_URL;
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -150,7 +153,7 @@ app.use('/api/ama', amaRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/webhooks/paystack', paystackWebhookRoutes);
 // Email test and setup routes - ONLY available in development
-if (process.env.NODE_ENV !== 'production') {
+if (!IS_PRODUCTION) {
   app.use('/api/auth', emailTestRoutes);
   app.use('/api/setup', setupRoutes);
 }
@@ -171,7 +174,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Test email - development only
-if (process.env.NODE_ENV !== 'production') {
+if (!IS_PRODUCTION) {
   app.post('/api/test-email', async (req, res) => {
     try {
       const { sendMailWithFallback, getEmailSender } = require('./utils/emailConfig');
@@ -194,7 +197,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Database schema verification endpoint (for debugging - restricted to development)
 app.get('/api/debug/schema', async (req, res) => {
   // Only allow in development environment
-  if (process.env.NODE_ENV === 'production') {
+  if (IS_PRODUCTION) {
     return res.status(403).json({
       error: 'Forbidden',
       message: 'This endpoint is only available in development mode'
@@ -268,13 +271,13 @@ app.get('/api/debug/schema', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: !IS_PRODUCTION ? error.stack : undefined
     });
   }
 });
 
 // Manual seed endpoint - development only
-if (process.env.NODE_ENV !== 'production') {
+if (!IS_PRODUCTION) {
   app.post('/api/seed-database', async (req, res) => {
     try {
       const seedDb = require('./scripts/seedDb');
@@ -290,7 +293,7 @@ if (process.env.NODE_ENV !== 'production') {
 // Manual migration endpoint (for fixing missing columns - restricted to development)
 app.post('/api/debug/migrate', async (req, res) => {
   // Only allow in development environment
-  if (process.env.NODE_ENV === 'production') {
+  if (IS_PRODUCTION) {
     return res.status(403).json({
       error: 'Forbidden',
       message: 'This endpoint is only available in development mode'
@@ -309,13 +312,13 @@ app.post('/api/debug/migrate', async (req, res) => {
     res.status(500).json({ 
       status: 'error', 
       message: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: !IS_PRODUCTION ? error.stack : undefined
     });
   }
 });
 
 // Production migration endpoint - development only
-if (process.env.NODE_ENV !== 'production') {
+if (!IS_PRODUCTION) {
   app.post('/api/run-missing-columns-migration', async (req, res) => {
     try {
       const db = require('./models/database');
@@ -333,7 +336,7 @@ if (process.env.NODE_ENV !== 'production') {
 // ============================================================
 // ADMIN / DEBUG / MIGRATION ENDPOINTS — Development only
 // ============================================================
-if (process.env.NODE_ENV !== 'production') {
+if (!IS_PRODUCTION) {
   app.post('/api/fix-seller-slugs', async (req, res) => {
     try {
       const db = require('./models/database');
