@@ -160,6 +160,11 @@ const SellerLoginPage = () => {
 
           <div className="auth-footer">
             <p>
+              <Link to="/seller/forgot-password" style={{ fontSize: '0.9rem' }}>
+                Forgot your password?
+              </Link>
+            </p>
+            <p>
               Don't have a seller account? 
               <Link to="/seller/signup"> Sign up here</Link>
             </p>

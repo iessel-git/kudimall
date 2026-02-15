@@ -116,6 +116,8 @@ export const sellerSignup = (data) => api.post('/auth/seller/signup', data);
 export const sellerLogin = (data) => api.post('/auth/seller/login', data);
 export const sellerVerifyCode = (data) => api.post('/auth/seller/verify-code', data);
 export const sellerResendVerification = (data) => api.post('/auth/seller/resend-verification', data);
+export const sellerForgotPassword = (data) => api.post('/auth/seller/forgot-password', data);
+export const sellerResetPassword = (data) => api.post('/auth/seller/reset-password', data);
 export const sellerLogout = () => api.post('/auth/seller/logout');
 export const getSellerProfile = () => api.get('/auth/seller/me');
 export const updateSellerProfile = (data) => api.put('/auth/seller/profile', data);

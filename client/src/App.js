@@ -21,6 +21,8 @@ import SellerApplicationPage from './pages/SellerApplicationPage';
 import SellerLoginPage from './pages/SellerLoginPage';
 import SellerSignupPage from './pages/SellerSignupPage';
 import SellerVerifyCodePage from './pages/SellerVerifyCodePage';
+import SellerForgotPasswordPage from './pages/SellerForgotPasswordPage';
+import SellerResetPasswordPage from './pages/SellerResetPasswordPage';
 import SellerDashboard from './pages/SellerDashboard';
 import BuyerLoginPage from './pages/BuyerLoginPage';
 import BuyerSignupPage from './pages/BuyerSignupPage';
@@ -68,6 +70,8 @@ function App() {
             <Route path="/seller/verify-email" element={<SellerVerifyCodePage />} />
             <Route path="/seller/verify" element={<SellerVerifyCodePage />} />
             <Route path="/seller/verify-code" element={<SellerVerifyCodePage />} />
+            <Route path="/seller/forgot-password" element={<SellerForgotPasswordPage />} />
+            <Route path="/seller/reset-password" element={<SellerResetPasswordPage />} />
             <Route path="/seller/dashboard" element={<SellerDashboard />} />
             <Route path="/buyer/login" element={<BuyerLoginPage />} />
             <Route path="/buyer/signup" element={<BuyerSignupPage />} />
