@@ -105,7 +105,6 @@ const Header = () => {
               <nav className="header-nav">
                 <Link to="/" className="nav-link">Home</Link>
                 <Link to="/deals" className="nav-link deals-link">🔥 Deals</Link>
-                <Link to="/search?type=sellers" className="nav-link">Sellers</Link>
                 {buyer && (
                   <Link to="/wishlist" className="nav-link wishlist-link">❤️</Link>
                 )}
